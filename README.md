@@ -220,9 +220,9 @@ http://127.0.0.1:5000
 ### Step 3 — Choose Your Engine
 
 ```text
-v4.0 Neural
+v7.0 Neural
      or
-v3.6 Legacy
+v5.6 Legacy
 ```
 
 ### Step 4 — Select Your Memory
