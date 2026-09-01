@@ -6,11 +6,11 @@ A lightweight Python AI engine built from scratch with an interactive **Flask We
 
 ## 🚀 Core Features & Capabilities
 
-* **🌐 Interactive Web Interface (`app.py`):** Modern Flask UI featuring live model switching between **v4.0 Neural** and **v3.6 Legacy**, real-time JSON memory selection, dynamic engine notices, and automated cleanup of empty memory files.
+* **🌐 Interactive Web Interface (`app.py`):** Modern Flask UI featuring live model switching between **v7.0 Neural** and **v5.6 Legacy**, real-time JSON memory selection, dynamic engine notices, and automated cleanup of empty memory files.
 
 * **🧠 Live Interactive Training:** If the AI doesn't understand a query, it interactively asks for the correct response and updates its persistent memory instantly.
 
-* **⚡ Auto-Fallback Engine:** Seamlessly detects local dependencies such as TensorFlow and safely falls back between **v4.0** and **v3.6** without freezing the session.
+* **⚡ Auto-Fallback Engine:** Seamlessly detects local dependencies such as TensorFlow and safely falls back between **v7.0** and **v5.6** without freezing the session.
 
 * **🧮 Dynamic Math Solver:** Instantly evaluates arithmetic expressions embedded directly within text queries.
 
@@ -25,8 +25,8 @@ A lightweight Python AI engine built from scratch with an interactive **Flask We
 | File Name               | Purpose                  | Key Concept                                                                                          |
 | :---------------------- | :----------------------- | :--------------------------------------------------------------------------------------------------- |
 | **`app.py`**            | **Web Hub Server**       | Flask server powering the Web Hub UI, model switching, JSON memory selection, and automatic cleanup. |
-| **`v3_6_AI_engine.py`** | **v3.6 Legacy Engine**   | Fast, lightweight rule-based engine with live training and arithmetic solving.                       |
-| **`main_engine.py`**    | **v4.0 Neural Engine**   | TensorFlow-powered engine for advanced intent classification.                                        |
+| **`v5_6_AI_engine.py`** | **v5.6 Legacy Engine**   | Fast, lightweight rule-based engine with live training and arithmetic solving.                       |
+| **`main_engine.py`**    | **v7.0 Neural Engine**   | TensorFlow-powered engine for advanced intent classification.                                        |
 | **`merge_memory.py`**   | **Memory Merger**        | Safely merges multi-user JSON training files into a master memory file.                              |
 | **`ai_memory_*.json`**  | **Persistent AI Memory** | JSON databases storing trained patterns, intents, and custom user responses.                         |
 
@@ -54,8 +54,8 @@ Then open your browser and navigate to:
 
 Use the header dropdown to switch between:
 
-* **v4.0 — Neural Engine**
-* **v3.6 — Legacy Engine**
+* **v7.0 — Neural Engine**
+* **v5.6 — Legacy Engine**
 
 You can change the active engine directly from the Web Hub.
 
@@ -122,7 +122,7 @@ The engine can process the individual parts sequentially.
 Infinity AI Hub supports two engine versions:
 
 ```text
-v4.0 Neural Engine
+v7.0 Neural Engine
         │
         ▼
 TensorFlow Available?
@@ -130,11 +130,11 @@ TensorFlow Available?
   YES       NO
    │         │
    ▼         ▼
-v4.0       v3.6
+v7.0       v5.6
 Neural    Legacy
 ```
 
-If required local dependencies such as **TensorFlow** are unavailable, the system can safely fall back to the **v3.6 Legacy Engine**.
+If required local dependencies such as **TensorFlow** are unavailable, the system can safely fall back to the **v5.6 Legacy Engine**.
 
 This helps keep the chat session running instead of failing because of a missing dependency.
 
@@ -162,7 +162,7 @@ Open http://127.0.0.1:5000 in Browser
     │
     ▼
 Select Engine
-(v4.0 Neural / v3.6 Legacy)
+(v7.0 Neural / v5.6 Legacy)
     │
     ▼
 Select Active Memory File
@@ -260,8 +260,8 @@ python merge_memory.py
                  │                           │
                  ▼                           ▼
         ┌─────────────────┐       ┌─────────────────┐
-        │ v4.0 Neural     │       │ v3.6 Legacy     │
-        │ main_engine.py  │       │ v3_6_AI_engine  │
+        │ v7.0 Neural     │       │ v5.6 Legacy     │
+        │ main_engine.py  │       │ v5_6_AI_engine  │
         └────────┬────────┘       └────────┬────────┘
                  │                           │
                  └─────────────┬─────────────┘
