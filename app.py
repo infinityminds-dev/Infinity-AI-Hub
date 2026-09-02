@@ -34,7 +34,7 @@ app = Flask(__name__)
 active_ai = None
 current_model_name = "None"
 startup_notice = ""
-selected_model_val = "v3.6"
+selected_model_val = "v5.6"
 selected_memory_file = ""
 
 def check_tensorflow():
@@ -52,16 +52,16 @@ def get_valid_memory_files():
     valid.sort(key=lambda x: os.path.getsize(x), reverse=True)
     return valid
 
-def load_ai_engine(model_type="v3.6", force_new=False, target_memory=None):
+def load_ai_engine(model_type="v5.6", force_new=False, target_memory=None):
     global active_ai, current_model_name, startup_notice, selected_model_val, selected_memory_file
 
     tf_available = check_tensorflow()
-    requested_v4 = model_type == "v4.0"
+    requested_v4 = model_type == "v7.0"
 
     if requested_v4 and not tf_available:
-        model_type = "v3.6"
-        selected_model_val = "v3.6"
-        startup_notice = "⚠️ Cannot switch to v4.0 (Neural): TensorFlow library is not installed! Auto-fallback to v3.6 Legacy."
+        model_type = "v5.6"
+        selected_model_val = "v5.6"
+        startup_notice = "⚠️ Cannot switch to v7.0 (Neural): TensorFlow library is not installed! Auto-fallback to v5.6 Legacy."
     else:
         selected_model_val = model_type
         startup_notice = ""
@@ -95,11 +95,11 @@ def load_ai_engine(model_type="v3.6", force_new=False, target_memory=None):
 
         selected_memory_file = target_file if target_file else ""
 
-        if model_type == "v4.0" and tf_available:
+        if model_type == "v7.0" and tf_available:
             import main_engine as engine_module
 
             active_ai = engine_module.MainAIEngine(user_name=extracted_name)
-            current_model_name = "v4.0 (TensorFlow Neural)"
+            current_model_name = "v7.0 (TensorFlow Neural)"
             startup_notice = f"TensorFlow Engine loaded. File: {target_file if target_file else 'New'} ({extracted_name.capitalize()})"
         else:
             import v5_6_AI_engine as engine_module
@@ -108,9 +108,9 @@ def load_ai_engine(model_type="v3.6", force_new=False, target_memory=None):
                 active_ai = engine_module.MainAIEngine(user_name=extracted_name)
                 active_ai.memory_file = target_file
                 active_ai.load_memory()
-                current_model_name = "v3.6 (Legacy Lightweight)"
+                current_model_name = "v5.6 (Legacy Lightweight)"
                 if not (requested_v4 and not tf_available):
-                    startup_notice = f"Switched to v3.6. Memory Loaded: {target_file} ({extracted_name.capitalize()})"
+                    startup_notice = f"Switched to v5.6. Memory Loaded: {target_file} ({extracted_name.capitalize()})"
             else:
                 random_id = random.randint(1000, 9999)
                 new_file_name = f"ai_memory_{extracted_name}_{random_id}.json"
@@ -119,16 +119,16 @@ def load_ai_engine(model_type="v3.6", force_new=False, target_memory=None):
                 active_ai.memory_db = []
                 active_ai.save_memory()
                 selected_memory_file = new_file_name
-                current_model_name = "v3.6 (Legacy Lightweight)"
+                current_model_name = "v5.6 (Legacy Lightweight)"
                 if not (requested_v4 and not tf_available):
-                    startup_notice = f"Switched to v3.6. Nayi file bani: {new_file_name}"
+                    startup_notice = f"Switched to v5.6. Nayi file bani: {new_file_name}"
 
     except Exception as e:
         active_ai = None
         current_model_name = "Error"
         startup_notice = f"Error loading engine: {str(e)}"
 
-initial_model = "v4.0" if check_tensorflow() else "v3.6"
+initial_model = "v7.0" if check_tensorflow() else "v5.6"
 load_ai_engine(initial_model)
 
 HTML_TEMPLATE = """
@@ -374,16 +374,16 @@ HTML_TEMPLATE = """
                 <button class="icon-btn" onclick="closeModalDirect('modelModal')">✕</button>
             </div>
             <div class="modal-body">
-                <div class="model-card-option {% if selected_val == 'v4.0' %}selected{% endif %}" onclick="selectModel('v4.0')">
+                <div class="model-card-option {% if selected_val == 'v7.0' %}selected{% endif %}" onclick="selectModel('v7.0')">
                     <div class="model-opt-info">
-                        <h4>v4.0 (Neural Engine)</h4>
+                        <h4>v7.0 (Neural Engine)</h4>
                         <p>TensorFlow deep-learning classifier with embeddings</p>
                     </div>
                     <span>🧠</span>
                 </div>
-                <div class="model-card-option {% if selected_val == 'v3.6' %}selected{% endif %}" onclick="selectModel('v3.6')">
+                <div class="model-card-option {% if selected_val == 'v5.6' %}selected{% endif %}" onclick="selectModel('v5.6')">
                     <div class="model-opt-info">
-                        <h4>v3.6 (Smart Legacy)</h4>
+                        <h4>v5.6 (Smart Legacy)</h4>
                         <p>Fast keyword similarity engine (Zero-dependency)</p>
                     </div>
                     <span>⚡</span>
@@ -449,7 +449,7 @@ HTML_TEMPLATE = """
                     <div class="action-group">
                         <label for="attach-file-input" class="btn-action-label" title="Attach Image or PDF">➕</label>
                         <div class="model-badge-btn" onclick="openModal('modelModal')">
-                            <span id="model-badge-text">{% if selected_val == 'v4.0' %}🔴 v4.0 (Neural){% else %}⚡ v3.6 (Legacy){% endif %}</span>
+                            <span id="model-badge-text">{% if selected_val == 'v7.0' %}🔴 v7.0 (Neural){% else %}⚡ v5.6 (Legacy){% endif %}</span>
                             <span style="font-size: 10px;">▼</span>
                         </div>
                     </div>
@@ -660,7 +660,7 @@ HTML_TEMPLATE = """
             const data = await response.json();
             
             currentSelectedModel = data.selected_val;
-            document.getElementById('model-badge-text').innerText = data.selected_val === 'v4.0' ? '🔴 v4.0 (Neural)' : '⚡ v3.6 (Legacy)';
+            document.getElementById('model-badge-text').innerText = data.selected_val === 'v7.0' ? '🔴 v7.0 (Neural)' : '⚡ v5.6 (Legacy)';
             document.getElementById('setting-active-model').innerText = data.selected_val;
             
             if (data.notice) appendMessage(data.notice, 'ai', true);
@@ -789,7 +789,7 @@ def home():
 def switch_model():
     try:
         data = request.json or {}
-        model_type = data.get("model", "v3.6")
+        model_type = data.get("model", "v5.6")
         target_mem = data.get("memory", None)
         load_ai_engine(model_type, target_memory=target_mem)
         return jsonify(
@@ -809,7 +809,7 @@ def switch_memory():
     try:
         data = request.json or {}
         target_mem = data.get("memory_file", "")
-        model_type = data.get("model", "v3.6")
+        model_type = data.get("model", "v5.6")
 
         if target_mem and os.path.exists(target_mem):
             load_ai_engine(model_type, target_memory=target_mem)
@@ -830,7 +830,7 @@ def delete_memory():
     try:
         data = request.json or {}
         target_mem = data.get("memory_file", "")
-        model_type = data.get("model", "v3.6")
+        model_type = data.get("model", "v5.6")
 
         if not target_mem or not os.path.exists(target_mem):
             return jsonify({"status": "error", "notice": "Memory file not found!"})
