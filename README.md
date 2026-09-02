@@ -1,4 +1,4 @@
-🧠 Infinity AI Hub — Self-Learning Conversational AI Engine
+#🧠 Infinity AI Hub — Self-Learning Conversational AI Engine
 
 ""License: MIT" (https://img.shields.io/badge/License-MIT-yellow.svg)" (LICENSE)
 
