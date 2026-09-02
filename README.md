@@ -31,7 +31,8 @@ A lightweight Python AI engine built from scratch with an interactive **Flask We
 | **`main_engine.py`**    | **v7.0 Neural Engine**   | TensorFlow-powered engine for advanced intent classification.                                        |
 | **`merge_memory.py`**   | **Memory Merger**        | Safely merges multi-user JSON training files into a master memory file.                              |
 | **`requirements.txt`**  | **Python Dependencies**  | Lists the external Python packages required by Infinity AI Hub.                                      |
-| **`ai_memory_*.json`**  | **Persistent AI Memory** | JSON databases storing trained patterns, intents, and custom user responses.                         |
+| **`ai_memory_*.json`**  | **Persistent AI Memory** | JSON databases storing trained patterns, intents, and custom user responses| 
+| **`LICENSE`** | Project License | MIT License information |
 
 ---
 
