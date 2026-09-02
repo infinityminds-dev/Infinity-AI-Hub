@@ -11,7 +11,11 @@
       "kaise ho",
       "kya haal hai",
       "hey bro",
-      "wassup"
+      "wassup",
+      "suno",
+      "oye",
+      "hey bot",
+      "yo"
     ],
     "responses": [
       "Arey {name} bhai! Kya scene hai aaj ka? 😎",
@@ -45,7 +49,11 @@
       "Sunkar badhiya laga {name}! Chal bata fir, aaj din kaisa gaya? 🔥",
       "Badiya bhai! Vaise aaj koi naya kand kiya ya chup chaap baithe ho? 👀"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "pizza": "Oo ho! Party hard bhai! Mujhe bhi bhej do thoda 🍕😋",
+      "kuch nahi": "Arey waah, simple aur badiya! 😋",
+      "bekar": "Arre kya hua bhai? Din bekar kyon gaya?"
+    }
   },
   {
     "tag": "acknowledgement",
@@ -66,7 +74,11 @@
       "Ekdam clear! Waise abhi free ho ya koi kaam nipta rahe ho?",
       "Done bhai! Waise itna chup kyo ho, kuch bolo na! 😁"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "free": "Sahi hai fir toh mast chill maaro ya game khelo! 🎮",
+      "busy": "Arre kaam nipta lo pehle, main idhar hi hu! 👍",
+      "kaam": "Hustle chalu rehna chahiye bhai! ⚡"
+    }
   },
   {
     "tag": "courtesy",
@@ -76,14 +88,18 @@
       "shukriya",
       "dhanyawad",
       "thanks bhai",
-      "thx"
+      "thx",
+      "thank u"
     ],
     "responses": [
       "Arre chill karo {name} bhai! Apne hi bande ho. 🙌",
       "Arre welcome bhai! Isme thanks kaisa, party do ab! 🍕",
       "Always active tere liye {name}! Kuch aur chahiye toh bol!"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "konsi party": "Samosa party bhai, aur kya! 😋",
+      "dilao": "Pehle tum do, fir main dunga! 😜"
+    }
   },
   {
     "tag": "goodbye",
@@ -94,14 +110,19 @@
       "see you",
       "alvida",
       "tc",
-      "take care"
+      "take care",
+      "ja raha hu",
+      "baad me baat karte hain"
     ],
     "responses": [
       "Chalo {name} bhai! Milte hain break ke baad. 👋",
       "Jao jao, aaram karo! Apna khyal rakhna bhai! 🔥",
       "Tata bhai! Kuch lafda ho toh turant yaad karna!"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "sleep": "Good night bro, mast neend lo! 🌙",
+      "kal": "Haan kal pakka milte hain! 👋"
+    }
   },
   {
     "tag": "agreement_disagreement",
@@ -135,7 +156,7 @@
     ],
     "responses": [
       "Arey aise kaise kuch nahi! Koi mast movie ya series dekhi hogi? 🍿",
-      "Bina kisi वजह ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨",
+      "Bina kisi wajah ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨",
       "Kuch khas nahi? Arey chill karo fir! Koi accha gaana suggest karu kya?"
     ],
     "context_responses": {
@@ -209,7 +230,7 @@
       "coding": "Sahi hai! Aaj kaunsa naya feature code karne wale ho? 💻⚡",
       "code": "Python me koi naya logic likhe kya aaj? 🐍⚡",
       "walk": "Sahi hai! Thodi taazi hawa lo aur fresh ho ke aao! 🚶‍♂️✨",
-      "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. ベッド💤",
+      "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. 🛏️💤",
       "soja": "Aaram se neend poori karo, rest bohot zaroori hai! 😴💤"
     }
   },
@@ -280,14 +301,28 @@
       "coding aati hai kya",
       "coding ke bare me pata hai",
       "loop kya hai",
-      "Meri help karga coding ma"
+      "Meri help karga coding ma",
+      "Mujhe tujh jaisa AI banana hai kaise banaun",
+      "car game ki script",
+      "mujhe car game bani hai",
+      "mujhe game bani hai",
+      "mujhe project bana hai coding se",
+      "website bani hai",
+      "app bani hai",
+      "desktop app bani hai",
+       "tech baat karte hain",
+      "pc build",
+      "android app",
+      "new tech",
+      "ai news"
     ],
     "responses": [
       "Mujhe abhi coding aur tech ke baare me zyada jankari nahi hai 😅. Iske liye aap ChatGPT ya Gemini jaise Large Language Models (LLM) se pooch sakte hain 🤖. Developer ne abhi mujhe itna develop nahi kiya hai, lekin in future main iska jawab zaroor de paunga!"
     ],
     "context_responses": {
       "python": "Python toh meri core language hai! Developer ne mujhe Python se hi banaya hai 🐍⚡",
-      "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖"
+      "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖 ",
+      "ai news":"ha bhai ma live news nahi de Sakta hoon kyunki Main Ek offline AI hua main real Time news Nahin De sakta Kisi Bhi chij ki aur na hi main purani news  De sakta hun agar aur kisi chij ke bare mein baat karni hai to main kar sakta hun 🥀"
     }
   },
   {
@@ -306,7 +341,7 @@
     ],
     "context_responses": {
       "kya hua": "Koi tension mat lo bhai, chill karo. Baatein karni ho toh main hu na!",
-      "kisi se baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"
+      "kisi से baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"
     }
   },
   {
@@ -346,10 +381,15 @@
       "kya kya kar sakte ho",
       "tum kya kya kar sakte ho",
       "tumhare features kya hain",
-      "what can you do"
+      "what can you do",
+      "tera kaam kya hai",
+      "kya kar sakte ho tum",
+      "apne features batao",
+      "tujhe kya kya aata hai",
+      "tu kya kya samajh sakta hai"
     ],
     "responses": [
-      "ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Jokes aur advice dena 💡\n4. Teri baatein aur memory yaad rakhna 🧠\n\nBol aaj kis cheez me madad chahiye?"
+      "ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Jokes aur advice dena 💡\n4. Teri baatein aur memory yaad rakhna 🧠\n5. PDF files se text read aur extract karna 📄\n6. Images se OCR ke zariye text read karna 🖼️\n\nBol aaj kis cheez me madad chahiye?"
     ],
     "context_responses": {}
   },
@@ -459,7 +499,10 @@
       "Dukandar: Ye kapda bohot waterproof hai!\nCustomer: Achha? Thoda paani daal ke dikhao!\nDukandar: Arre bhai, dukaan me baarish karwaoge kya? 🌧️👕😂",
       "Papa: Tum har waqt phone pe kya karte rehte ho?\nBeta: Papa, future ki planning kar raha hoon!\nPapa: Game me level up karne ko future planning nahi kehte! 🎮🤦‍♂️",
       "Doctor: Aapko subah aur shaam walk karni chahiye!\nPatient: Sir, walk karne se kya hoga?\nDoctor: Pait kam hoga!\nPatient: Lekin sir, mera pait toh pehle se hi peeth se chipka hai! 🚶‍♂️🤣",
-      "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯"
+      "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯",
+      "Boss: Tum office roz late kyon aate ho?\nEmployee: Sir, raste me ek board laga hai jispe likha hai - 'Aage school hai, dheere chalein!' Isliye main dheere aata hoon! 🚸😂",
+      "Pappu: Yaar mujhe ek aisi naukri chahiye jisme kaam kam ho aur salary zyada ho!\nFriend: Ek kaam kar, bank me ATM machine ban ja! 🏧💸😜",
+      "Judge: Tumne chor ko chori karte waqt pakda nahi?\nGuard: Sahab, main socha wo apna hi ghar saaf kar raha hoga, mujhe kya pata tha! 🏠💤😂"
     ],
     "context_responses": {
       "aur sunao": "Ek aur suno: Doctor - Tumhare daant me kida kaise laga? Pappu - Mithai khate waqt sir! Doctor - Kida dikha nahi? Pappu - Arre wo mithai me chhup ke baitha tha! 🍬🦷🤣",
@@ -483,7 +526,9 @@
       "Sahi salah chahiye toh simple baat yaad rakho {name} bhai: Ek waqt pe ek hi kaam par focus karo, distraction se door raho aur daily thodi mehnat karo! 🎯",
       "Bhai meri sabse badi advice yehi hai: Consistency banaye rakho! Roz thoda thoda seekhoge toh long run me bohot aage nikal jaoge! 🚀",
       "Agar padhai ya kaam me focus nahi ho raha, toh Pomodoro technique use karo: 25 min kaam + 5 min break! Boht sahi chalta hai! ⏱️💡",
-      "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥"
+      "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥",
+      "Subah jaldi uthne ki aadat daalo bhai, din me extra time milta hai aur saare kaam aaram se nipat jaate hain! 🌅✨",
+      "Social media ka screen time kam karo bhai, asli life screen ke baahar hai jahan real hustle hoti hai! 📵🚀"
     ],
     "context_responses": {
       "thik hai": "Sahi hai bhai, implement karke dekho, zaroor fayda hoga! 🚀",
@@ -514,7 +559,7 @@
       "dance"
     ],
     "responses": [
-      "lekin kyo nachooo bhai kya baat hai",
+        "lekin kyo nachooo bhai kya baat hai",
       "Arre waah! Koi badi khushi ki baat hai kya bhai? 🕺🎉"
     ],
     "context_responses": {}
@@ -529,7 +574,8 @@
       "kya kar raha hai yaar",
       "ye kya baat hui",
       "kya scene hai yaar",
-      "pagal hai kya"
+      "pagal hai kya",
+      "samajh nahi aa raha"
     ],
     "responses": [
       "Arey sorry {name} bhai! 😅 Dimaag thoda idhar udhar ho gaya tha. Ab bata kya scene hai?",
@@ -563,14 +609,19 @@
       "duokhi hu",
       "sad hu",
       "mood kharab hai",
-      "dil toot gaya"
+      "dil toot gaya",
+      "rula mat"
     ],
     "responses": [
       "Arey kya hua {name} bhai? Rona mat, kisne pareshan kiya batayo mujhe! 😠",
       "Bhai tension mat le, sab theek ho jayega. Kuch hua hai kya?",
       "Chill maaro bhai! Ek baar lambi saans lo aur batao kya tension hai? 🫂"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "breakup": "Arey bhai, dil mat chota karo! Life me aage bohot accha likha hai! 💪",
+      "padhai": "Tension mat lo bhai, break lo aur thodi der baad aaram se padhna! 📚",
+      "ghar": "Sab sorted ho jayega bhai, calm raho thoda! ☕"
+    }
   },
   {
     "tag": "bot_confusion",
@@ -598,7 +649,10 @@
     "responses": [
       "Mausam ka toh pata nahi bhai, par tu ghar pe baith ke chill maar! ☀️🌧️"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "garmi": "Thanda paani piyo aur AC/fan me baitho bhai! 🧊",
+      "baarish": "Chai pakode ka scene banao fir toh! ☕🌧️"
+    }
   },
   {
     "tag": "bad_day_feeling",
@@ -614,7 +668,7 @@
       "accha nahi gaya"
     ],
     "responses": [
-      "Arey kya hua Pankaj bhai? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!",
+      "Arey kya hua {name}? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!",
       "Oh ho! Kya tension ho gayi bhai? Koi lafda hua kya aaj?",
       "Koi nahi bhai, har din ek jaisa nahi hota. Thoda aaram karo aur chill maaro! ☕"
     ],
@@ -623,16 +677,45 @@
   {
     "tag": "clarification_correction",
     "patterns": [
-      "din ki baat kar raha hu",
+      "din ki  kar raha hu",
       "teri baat nahi kar raha",
       "are bhai din ki baat kar raha hu teri nahi",
       "tujhe nahi bol raha",
       "dhyan se sun"
     ],
     "responses": [
-      "Acha acha! My bad Pankaj bhai, main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?",
+      "Acha acha!  {name} My bad , main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?",
       "Sahi pakde hain! Main thoda confuse ho gaya tha. Haan bata kya hua tha aaj?"
     ],
     "context_responses": {}
+  },
+  {
+    "tag": "custom_6480",
+    "patterns": [
+      "minecraft"
+    ],
+    "responses": [
+      "Oo bhai phri toh next level kam hoga toh kya socha hai koi building Bani hai ya minecraft with create mod Khel na hai 😋"
+    ],
+    "context_responses": {}
+  },
+  {
+    "tag": "food_hungry",
+    "patterns": [
+      "bhookh lagi hai",
+      "khana khana hai",
+      "kya khau",
+      "kuch khane ka man hai",
+      "khana peena"
+    ],
+    "responses": [
+      "Arey pehle pet pooja, fir kaam dooja! 🍕 Burgers, Momos ya mast ghar ka khana?"
+    ],
+    "context_responses": {
+      "momos": "Teekhi chutney ke sath momos ka alag hi swad hai! 🥟🔥",
+      "burger": "Extra cheese burger manga lo fir toh! 🍔"
+    }
   }
-]
+    ]
+      
+      
