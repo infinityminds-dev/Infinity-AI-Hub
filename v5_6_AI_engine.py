@@ -1231,7 +1231,7 @@ class MainAIEngine:
         prepared_text = re.sub(math_pattern, r" , \1 , ", raw_text)
 
         # 2. String ko delimiters aur spaces par split karo
-        parts = re.split(r",|\.|\?|\s+aur\s+|\s+or\s+|\s+", prepared_text)
+        parts = re.split(r",|\.|\?|\s+aur\s+|\s+or\s+", prepared_text)
 
         # 3. Agar split karne par 1 se zyada parts bane (jaise math + hi), toh sub-queries process karo
         if len([p for p in parts if p.strip()]) > 1:
