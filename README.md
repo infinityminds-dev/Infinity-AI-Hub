@@ -314,7 +314,10 @@ Infinity AI Hub is designed as a lightweight, self-learning conversational AI sy
 * 🧮 Solve mathematical expressions
 * 🔀 Process multiple queries
 * 🤝 Merge knowledge from multiple users
+* 📄 Extract and process text from PDF files
+* 🖼️ Read text from images using OCR
 * 🌐 Provide an easy-to-use Flask Web Hub
+* 
 
 ---
 
