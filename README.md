@@ -1,5 +1,7 @@
 # 🧠 Infinity AI Hub - Self-Learning Conversational AI Engine
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A lightweight Python AI engine built from scratch with an interactive **Flask Web Hub UI**, live self-learning, multi-query processing, dynamic math solving, and automated JSON memory management.
 
 ---
@@ -28,13 +30,14 @@ A lightweight Python AI engine built from scratch with an interactive **Flask We
 | **`v5_6_AI_engine.py`** | **v5.6 Legacy Engine**   | Fast, lightweight rule-based engine with live training and arithmetic solving.                       |
 | **`main_engine.py`**    | **v7.0 Neural Engine**   | TensorFlow-powered engine for advanced intent classification.                                        |
 | **`merge_memory.py`**   | **Memory Merger**        | Safely merges multi-user JSON training files into a master memory file.                              |
+| **`requirements.txt`**  | **Python Dependencies**  | Lists the external Python packages required by Infinity AI Hub.                                      |
 | **`ai_memory_*.json`**  | **Persistent AI Memory** | JSON databases storing trained patterns, intents, and custom user responses.                         |
 
 ---
 
-## 🛠️ How to Run & Use
+# 🛠️ How to Run & Use
 
-### 1. ▶️ Start the Web Server
+## 1. ▶️ Start the Web Server
 
 Open your terminal in the project directory and run:
 
@@ -48,9 +51,9 @@ Then open your browser and navigate to:
 
 ---
 
-### 2. 🎛️ Features on the Web Hub
+## 2. 🎛️ Features on the Web Hub
 
-#### 🔄 Switch Models
+### 🔄 Switch Models
 
 Use the header dropdown to switch between:
 
@@ -59,11 +62,11 @@ Use the header dropdown to switch between:
 
 You can change the active engine directly from the Web Hub.
 
-#### 🧠 Select Active Memory
+### 🧠 Select Active Memory
 
-Switch between available **`.json` memory files** instantly without restarting the server.
+Switch between available `.json` memory files instantly without restarting the server.
 
-#### ➕ Create New JSON
+### ➕ Create New JSON
 
 Click **➕ New JSON** to create a fresh user memory/session.
 
@@ -71,23 +74,23 @@ The Web Hub automatically scans memory files and cleans up empty memory files wh
 
 ---
 
-### 3. 🧠 Live Training in Chat
+## 3. 🧠 Live Training in Chat
 
 Chat naturally with the AI.
 
 If an input is unrecognized, the AI will ask:
 
-> **"Mujhe iska matlab nahi pata... toh kya jawab doon?"**
+> "Mujhe iska matlab nahi pata... toh kya jawab doon?"
 
 Simply type the response you want the AI to learn.
 
-The response is then saved permanently into the **currently active `.json` memory file**.
+The response is then saved permanently into the currently active `.json` memory file.
 
 This allows the AI to continuously expand its knowledge through interaction.
 
 ---
 
-### 4. 🧮 Dynamic Math Solver
+## 4. 🧮 Dynamic Math Solver
 
 The AI can detect arithmetic expressions directly inside normal text queries and calculate them automatically.
 
@@ -101,9 +104,9 @@ The engine can process the mathematical expression and return the result without
 
 ---
 
-### 5. 🔀 Multi-Sentence Processing
+## 5. 🔀 Multi-Sentence Processing
 
-The engine can split complex inputs into multiple smaller queries.
+The engine can split complex user inputs into multiple smaller queries.
 
 This allows the AI to process several requests from a single user message instead of treating the entire message as one query.
 
@@ -117,30 +120,35 @@ The engine can process the individual parts sequentially.
 
 ---
 
-### 6. ⚡ Automatic Engine Fallback
+## 6. ⚡ Automatic Engine Fallback
 
 Infinity AI Hub supports two engine versions:
 
+* **v7.0 Neural Engine**
+* **v5.6 Legacy Engine**
+
+### Fallback Flow
+
 ```text
-v7.0 Neural Engine
-        │
-        ▼
-TensorFlow Available?
-   ┌────┴────┐
-  YES       NO
-   │         │
-   ▼         ▼
-v7.0       v5.6
-Neural    Legacy
+             v7.0 Neural Engine
+                      │
+                      ▼
+             TensorFlow Available?
+                 ┌────┴────┐
+                YES        NO
+                 │          │
+                 ▼          ▼
+               v7.0       v5.6
+              Neural      Legacy
 ```
 
-If required local dependencies such as **TensorFlow** are unavailable, the system can safely fall back to the **v5.6 Legacy Engine**.
+If required local dependencies such as TensorFlow are unavailable, the system can safely fall back to the v5.6 Legacy Engine.
 
 This helps keep the chat session running instead of failing because of a missing dependency.
 
 ---
 
-### 7. 🔀 Merge Friend Memories
+## 7. 🔀 Merge Friend Memories
 
 To combine training data from multiple JSON memory files, place the exported memory files in the project directory and run:
 
@@ -152,72 +160,84 @@ The memory merger combines the training data into the master memory while protec
 
 ---
 
-## 🛠️ Typical Workflow
+# 🛠️ Typical Workflow
 
 ```text
-Run app.py
-    │
-    ▼
-Open http://127.0.0.1:5000 in Browser
-    │
-    ▼
-Select Engine
-(v7.0 Neural / v5.6 Legacy)
-    │
-    ▼
-Select Active Memory File
-    │
-    ▼
-Chat with AI
-    │
-    ├──► Math Query
-    │       │
-    │       └──► Instant Answer
-    │
-    ├──► Known Query
-    │       │
-    │       └──► AI Response
-    │
-    └──► Unknown Query
-            │
-            ▼
-      AI asks for correct answer
-            │
-            ▼
-      User provides response
-            │
-            ▼
-      Response saved to memory
-            │
-            ▼
-      AI learns from the new data
-
-                │
-                ▼
-
-       Merge JSONs when needed
-                │
-                ▼
-       python merge_memory.py
+                         ┌─────────────────┐
+                         │    Run app.py   │
+                         └────────┬────────┘
+                                  │
+                                  ▼
+                    ┌──────────────────────────┐
+                    │ Open 127.0.0.1:5000      │
+                    │ in Browser               │
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ Select Engine             │
+                    │ v7.0 Neural / v5.6 Legacy│
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ Select Active Memory File │
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                         ┌───────────────┐
+                         │   Chat with AI │
+                         └───────┬───────┘
+                                 │
+                  ┌──────────────┼──────────────┐
+                  │              │              │
+                  ▼              ▼              ▼
+             Math Query     Known Query    Unknown Query
+                  │              │              │
+                  ▼              ▼              ▼
+           Instant Answer    AI Response   Ask for Answer
+                                                 │
+                                                 ▼
+                                      User Provides Response
+                                                 │
+                                                 ▼
+                                      Response Saved to Memory
+                                                 │
+                                                 ▼
+                                            AI Learns
+                                                 │
+                                                 ▼
+                                      Merge JSONs When Needed
+                                                 │
+                                                 ▼
+                                      python merge_memory.py
 ```
 
 ---
 
-## 📦 Quick Start
+# 📦 Quick Start
 
-### Step 1 — Start Infinity AI Hub
+## Step 1 — Install Dependencies
+
+Install the required Python packages from `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Step 2 — Start Infinity AI Hub
 
 ```bash
 python app.py
 ```
 
-### Step 2 — Open the Web Hub
+## Step 3 — Open the Web Hub
 
 ```text
 http://127.0.0.1:5000
 ```
 
-### Step 3 — Choose Your Engine
+## Step 4 — Choose Your Engine
 
 ```text
 v7.0 Neural
@@ -225,15 +245,15 @@ v7.0 Neural
 v5.6 Legacy
 ```
 
-### Step 4 — Select Your Memory
+## Step 5 — Select Your Memory
 
 Choose an existing `.json` memory file or create a new one.
 
-### Step 5 — Start Chatting
+## Step 6 — Start Chatting
 
 Ask questions, solve math problems, and train the AI with new responses.
 
-### Step 6 — Merge Memories
+## Step 7 — Merge Memories
 
 When you have training data from multiple users:
 
@@ -243,47 +263,47 @@ python merge_memory.py
 
 ---
 
-## 🧠 Infinity AI Hub Architecture
+# 🧠 Infinity AI Hub Architecture
 
 ```text
-                    ┌─────────────────────┐
-                    │    Infinity AI Hub  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │      app.py         │
-                    │    Flask Web Hub     │
-                    └──────────┬──────────┘
-                               │
-                 ┌─────────────┴─────────────┐
-                 │                           │
-                 ▼                           ▼
-        ┌─────────────────┐       ┌─────────────────┐
-        │ v7.0 Neural     │       │ v5.6 Legacy     │
-        │ main_engine.py  │       │ v5_6_AI_engine  │
-        └────────┬────────┘       └────────┬────────┘
-                 │                           │
-                 └─────────────┬─────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │ ai_memory_*.json    │
-                    │ Persistent Memory    │
-                    └──────────┬──────────┘
-                               ▲
-                               │
-                    ┌──────────┴──────────┐
-                    │ merge_memory.py     │
-                    │ Memory Merger       │
-                    └─────────────────────┘
+                         ┌─────────────────────┐
+                         │   Infinity AI Hub   │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │       app.py        │
+                         │    Flask Web Hub    │
+                         └──────────┬──────────┘
+                                    │
+                     ┌──────────────┴──────────────┐
+                     │                             │
+                     ▼                             ▼
+          ┌─────────────────────┐       ┌─────────────────────┐
+          │     v7.0 Neural     │       │     v5.6 Legacy     │
+          │    main_engine.py   │       │ v5_6_AI_engine.py   │
+          └──────────┬──────────┘       └──────────┬──────────┘
+                     │                             │
+                     └──────────────┬──────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │  ai_memory_*.json   │
+                         │  Persistent Memory  │
+                         └──────────┬──────────┘
+                                    ▲
+                                    │
+                         ┌──────────┴──────────┐
+                         │  merge_memory.py    │
+                         │   Memory Merger     │
+                         └─────────────────────┘
 ```
 
 ---
 
-## 🎯 Project Goal
+# 🎯 Project Goal
 
-**Infinity AI Hub** is designed as a lightweight, self-learning conversational AI system that can:
+Infinity AI Hub is designed as a lightweight, self-learning conversational AI system that can:
 
 * 💬 Chat with users
 * 🧠 Learn from new conversations
@@ -297,15 +317,15 @@ python merge_memory.py
 
 ---
 
-## 📌 Main Commands
+# 📌 Main Commands
 
-Start the Web Hub:
+### Start the Web Hub
 
 ```bash
 python app.py
 ```
 
-Merge AI memories:
+### Merge AI Memories
 
 ```bash
 python merge_memory.py
@@ -313,6 +333,22 @@ python merge_memory.py
 
 ---
 
-### ❤️ Built From Scratch
+# 📜 License
 
-**Infinity AI Hub** is a lightweight AI project focused on experimentation, self-learning, persistent memory, and practical conversational AI development using Python.
+Infinity AI Hub is licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for the full license text.
+
+---
+
+# ❤️ Built From Scratch
+
+Infinity AI Hub is a lightweight AI project focused on experimentation, self-learning, persistent memory, and conversational AI development.
+
+Built from scratch with the goal of creating a system that can continuously **learn, remember, and improve through interaction.**
+
+---
+
+## 🧠 Infinity AI Hub
+
+**Learn. Remember. Evolve. ♾️**
