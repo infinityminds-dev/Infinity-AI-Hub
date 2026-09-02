@@ -334,11 +334,13 @@ python merge_memory.py
 
 ---
 
-# 📜 License
 
-Infinity AI Hub is licensed under the MIT License.
+## 📜 License
 
-See the [LICENSE](LICENSE) file for the full license text.
+Infinity AI Hub is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 infinityminds-dev
+
 
 ---
 
