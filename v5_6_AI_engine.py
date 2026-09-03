@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import difflib
 import glob
 import json
@@ -6,6 +6,7 @@ import math
 import os
 import random
 import re
+import sqlite3
 from collections import Counter
 
 
@@ -75,7 +76,7 @@ class SmartIntentClassifier:
 
             bigram_counts = self.intent_bigrams.get(tag, Counter())
             for bg in bigrams:
-                if bg in bigram_counts:
+                if bg in bg:
                     score += 2.0
 
             score = score / (len(tokens) ** 0.4)
@@ -99,14 +100,97 @@ class MainAIEngine:
         self.current_context = None
         self.last_responses = {}
 
-        # RAM Stream Image Storage
         self.ram_image_context = None
+
+        self.db_name = "knowledge.db"
+        self.init_sqlite_db()
 
         self.memory_file = self.handle_smart_memory_file()
         self.memory_db = []
 
         self.classifier = SmartIntentClassifier()
         self.load_memory()
+
+    def init_sqlite_db(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tech_knowledge (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                topic TEXT UNIQUE,
+                definition TEXT
+            )
+        """
+        )
+
+        cursor.execute("SELECT COUNT(*) FROM tech_knowledge")
+        if cursor.fetchone()[0] == 0:
+            defaults = [
+                (
+                    "cpu",
+                    "CPU (Central Processing Unit) computer ka brain hota hai jo saari calculations aur instructions execute karta hai.",
+                ),
+                (
+                    "ram",
+                    "RAM (Random Access Memory) temporary memory hoti hai jo open apps aur active tasks ko fast run karti hai.",
+                ),
+                (
+                    "python",
+                    "Python ek high-level, interpreted programming language hai jo AI, Web Dev aur Automation me use hoti hai.",
+                ),
+                (
+                    "html",
+                    "HTML (HyperText Markup Language) web pages ka basic structure banane ke liye istemal hoti hai.",
+                ),
+                (
+                    "sql",
+                    "SQL (Structured Query Language) databases me data store, search aur manage karne ki language hai.",
+                ),
+            ]
+            cursor.executemany(
+                "INSERT OR IGNORE INTO tech_knowledge (topic, definition) VALUES (?, ?)",
+                defaults,
+            )
+            conn.commit()
+
+        conn.close()
+
+    def search_sqlite_knowledge(self, query):
+        words = re.findall(r"\w+", query.lower())
+        ignore = {
+            "kya",
+            "hai",
+            "kaun",
+            "sa",
+            "batao",
+            "bata",
+            "kisi",
+            "ko",
+            "bhai",
+            "samjha",
+        }
+        clean_words = [w for w in words if w not in ignore and len(w) > 1]
+
+        if not clean_words:
+            return None
+
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+
+        for word in clean_words:
+            cursor.execute(
+                "SELECT topic, definition FROM tech_knowledge WHERE LOWER(topic) = ? OR LOWER(topic) LIKE ?",
+                (word, f"%{word}%"),
+            )
+            row = cursor.fetchone()
+            if row:
+                conn.close()
+                return f"🧠 **Knowledge Base ({row[0].upper()}):** {row[1]}"
+
+        conn.close()
+        return None
 
     def get_non_repeating_choice(self, tag, responses):
         if not responses:
@@ -129,14 +213,20 @@ class MainAIEngine:
         if self.user_name == "pankaj":
             master_file = "ai_memory_pankaj_master.json"
             if os.path.exists(master_file):
-                print(f"\n[Access Granted] Welcome back Developer Pankaj! Loading Master File: {master_file}")
+                print(
+                    f"\n[Access Granted] Welcome back Developer Pankaj! Loading Master File: {master_file}"
+                )
             else:
-                print(f"\n[Info] Creating Developer Master Brain file: {master_file}")
+                print(
+                    f"\n[Info] Creating Developer Master Brain file: {master_file}"
+                )
             return master_file
 
         if "pankaj" in self.user_name:
             print("\n" + "=" * 65)
-            print("❌ ACCESS DENIED: You cannot create a file starting with 'Pankaj'!")
+            print(
+                "❌ ACCESS DENIED: You cannot create a file starting with 'Pankaj'!"
+            )
             print("Reason: This is the main developer master file.")
             print("=" * 65 + "\n")
             self.user_name = "guest_user"
@@ -147,7 +237,9 @@ class MainAIEngine:
         ]
 
         if user_specific_files:
-            print(f"\n[Info] Tumhari purani memory file mil gayi: {user_specific_files[0]}")
+            print(
+                f"\n[Info] Tumhari purani memory file mil gayi: {user_specific_files[0]}"
+            )
             return user_specific_files[0]
 
         random_id = random.randint(1000, 9999)
@@ -169,7 +261,11 @@ class MainAIEngine:
       "kaise ho",
       "kya haal hai",
       "hey bro",
-      "wassup"
+      "wassup",
+      "suno",
+      "oye",
+      "hey bot",
+      "yo"
     ],
     "responses": [
       "Arey {name} bhai! Kya scene hai aaj ka? 😎",
@@ -203,7 +299,11 @@ class MainAIEngine:
       "Sunkar badhiya laga {name}! Chal bata fir, aaj din kaisa gaya? 🔥",
       "Badiya bhai! Vaise aaj koi naya kand kiya ya chup chaap baithe ho? 👀"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "pizza": "Oo ho! Party hard bhai! Mujhe bhi bhej do thoda 🍕😋",
+      "kuch nahi": "Arey waah, simple aur badiya! 😋",
+      "bekar": "Arre kya hua bhai? Din bekar kyon gaya?"
+    }
   },
   {
     "tag": "acknowledgement",
@@ -224,7 +324,11 @@ class MainAIEngine:
       "Ekdam clear! Waise abhi free ho ya koi kaam nipta rahe ho?",
       "Done bhai! Waise itna chup kyo ho, kuch bolo na! 😁"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "free": "Sahi hai fir toh mast chill maaro ya game khelo! 🎮",
+      "busy": "Arre kaam nipta lo pehle, main idhar hi hu! 👍",
+      "kaam": "Hustle chalu rehna chahiye bhai! ⚡"
+    }
   },
   {
     "tag": "courtesy",
@@ -234,14 +338,18 @@ class MainAIEngine:
       "shukriya",
       "dhanyawad",
       "thanks bhai",
-      "thx"
+      "thx",
+      "thank u"
     ],
     "responses": [
       "Arre chill karo {name} bhai! Apne hi bande ho. 🙌",
       "Arre welcome bhai! Isme thanks kaisa, party do ab! 🍕",
       "Always active tere liye {name}! Kuch aur chahiye toh bol!"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "konsi party": "Samosa party bhai, aur kya! 😋",
+      "dilao": "Pehle tum do, fir main dunga! 😜"
+    }
   },
   {
     "tag": "goodbye",
@@ -252,14 +360,19 @@ class MainAIEngine:
       "see you",
       "alvida",
       "tc",
-      "take care"
+      "take care",
+      "ja raha hu",
+      "baad me baat karte hain"
     ],
     "responses": [
       "Chalo {name} bhai! Milte hain break ke baad. 👋",
       "Jao jao, aaram karo! Apna khyal rakhna bhai! 🔥",
       "Tata bhai! Kuch lafda ho toh turant yaad karna!"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "sleep": "Good night bro, mast neend lo! 🌙",
+      "kal": "Haan kal pakka milte hain! 👋"
+    }
   },
   {
     "tag": "agreement_disagreement",
@@ -293,7 +406,7 @@ class MainAIEngine:
     ],
     "responses": [
       "Arey aise kaise kuch nahi! Koi mast movie ya series dekhi hogi? 🍿",
-      "Bina kisi वजह ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨",
+      "Bina kisi wajah ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨",
       "Kuch khas nahi? Arey chill karo fir! Koi accha gaana suggest karu kya?"
     ],
     "context_responses": {
@@ -367,7 +480,7 @@ class MainAIEngine:
       "coding": "Sahi hai! Aaj kaunsa naya feature code karne wale ho? 💻⚡",
       "code": "Python me koi naya logic likhe kya aaj? 🐍⚡",
       "walk": "Sahi hai! Thodi taazi hawa lo aur fresh ho ke aao! 🚶‍♂️✨",
-      "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. ベッド💤",
+      "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. 🛏️💤",
       "soja": "Aaram se neend poori karo, rest bohot zaroori hai! 😴💤"
     }
   },
@@ -438,14 +551,28 @@ class MainAIEngine:
       "coding aati hai kya",
       "coding ke bare me pata hai",
       "loop kya hai",
-      "Meri help karga coding ma"
+      "Meri help karga coding ma",
+      "Mujhe tujh jaisa AI banana hai kaise banaun",
+      "car game ki script",
+      "mujhe car game bani hai",
+      "mujhe game bani hai",
+      "mujhe project bana hai coding se",
+      "website bani hai",
+      "app bani hai",
+      "desktop app bani hai",
+      "tech baat karte hain",
+      "pc build",
+      "android app",
+      "new tech",
+      "ai news"
     ],
     "responses": [
       "Mujhe abhi coding aur tech ke baare me zyada jankari nahi hai 😅. Iske liye aap ChatGPT ya Gemini jaise Large Language Models (LLM) se pooch sakte hain 🤖. Developer ne abhi mujhe itna develop nahi kiya hai, lekin in future main iska jawab zaroor de paunga!"
     ],
     "context_responses": {
       "python": "Python toh meri core language hai! Developer ne mujhe Python se hi banaya hai 🐍⚡",
-      "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖"
+      "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖 ",
+      "ai news": "ha bhai ma live news nahi de Sakta hoon kyunki Main Ek offline AI hua main real Time news Nahin De sakta Kisi Bhi chij ki aur na hi main purani news  De sakta hun agar aur kisi chij ke bare mein baat karni hai to main kar sakta hun 🥀"
     }
   },
   {
@@ -464,7 +591,7 @@ class MainAIEngine:
     ],
     "context_responses": {
       "kya hua": "Koi tension mat lo bhai, chill karo. Baatein karni ho toh main hu na!",
-      "kisi se baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"
+      "kisi से baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"
     }
   },
   {
@@ -504,10 +631,15 @@ class MainAIEngine:
       "kya kya kar sakte ho",
       "tum kya kya kar sakte ho",
       "tumhare features kya hain",
-      "what can you do"
+      "what can you do",
+      "tera kaam kya hai",
+      "kya kar sakte ho tum",
+      "apne features batao",
+      "tujhe kya kya aata hai",
+      "tu kya kya samajh sakta hai"
     ],
     "responses": [
-      "ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Jokes aur advice dena 💡\n4. Teri baatein aur memory yaad rakhna 🧠\n\nBol aaj kis cheez me madad chahiye?"
+      "ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Jokes aur advice dena 💡\n4. Teri baatein aur memory yaad rakhna 🧠\n5. PDF files se text read aur extract karna 📄\n6. Images se OCR ke zariye text read karna 🖼️\n\nBol aaj kis cheez me madad chahiye?"
     ],
     "context_responses": {}
   },
@@ -617,7 +749,10 @@ class MainAIEngine:
       "Dukandar: Ye kapda bohot waterproof hai!\nCustomer: Achha? Thoda paani daal ke dikhao!\nDukandar: Arre bhai, dukaan me baarish karwaoge kya? 🌧️👕😂",
       "Papa: Tum har waqt phone pe kya karte rehte ho?\nBeta: Papa, future ki planning kar raha hoon!\nPapa: Game me level up karne ko future planning nahi kehte! 🎮🤦‍♂️",
       "Doctor: Aapko subah aur shaam walk karni chahiye!\nPatient: Sir, walk karne se kya hoga?\nDoctor: Pait kam hoga!\nPatient: Lekin sir, mera pait toh pehle se hi peeth se chipka hai! 🚶‍♂️🤣",
-      "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯"
+      "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯",
+      "Boss: Tum office roz late kyon aate ho?\nEmployee: Sir, raste me ek board laga hai jispe likha hai - 'Aage school hai, dheere chalein!' Isliye main dheere aata hoon! 🚸😂",
+      "Pappu: Yaar mujhe ek aisi naukri chahiye jisme kaam kam ho aur salary zyada ho!\nFriend: Ek kaam kar, bank me ATM machine ban ja! 🏧💸😜",
+      "Judge: Tumne chor ko chori karte waqt pakda nahi?\nGuard: Sahab, main socha wo apna hi ghar saaf kar raha hoga, mujhe kya pata tha! 🏠💤😂"
     ],
     "context_responses": {
       "aur sunao": "Ek aur suno: Doctor - Tumhare daant me kida kaise laga? Pappu - Mithai khate waqt sir! Doctor - Kida dikha nahi? Pappu - Arre wo mithai me chhup ke baitha tha! 🍬🦷🤣",
@@ -641,7 +776,9 @@ class MainAIEngine:
       "Sahi salah chahiye toh simple baat yaad rakho {name} bhai: Ek waqt pe ek hi kaam par focus karo, distraction se door raho aur daily thodi mehnat karo! 🎯",
       "Bhai meri sabse badi advice yehi hai: Consistency banaye rakho! Roz thoda thoda seekhoge toh long run me bohot aage nikal jaoge! 🚀",
       "Agar padhai ya kaam me focus nahi ho raha, toh Pomodoro technique use karo: 25 min kaam + 5 min break! Boht sahi chalta hai! ⏱️💡",
-      "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥"
+      "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥",
+      "Subah jaldi uthne ki aadat daalo bhai, din me extra time milta hai aur saare kaam aaram se nipat jaate hain! 🌅✨",
+      "Social media ka screen time kam karo bhai, asli life screen ke baahar hai jahan real hustle hoti hai! 📵🚀"
     ],
     "context_responses": {
       "thik hai": "Sahi hai bhai, implement karke dekho, zaroor fayda hoga! 🚀",
@@ -687,7 +824,8 @@ class MainAIEngine:
       "kya kar raha hai yaar",
       "ye kya baat hui",
       "kya scene hai yaar",
-      "pagal hai kya"
+      "pagal hai kya",
+      "samajh nahi aa raha"
     ],
     "responses": [
       "Arey sorry {name} bhai! 😅 Dimaag thoda idhar udhar ho gaya tha. Ab bata kya scene hai?",
@@ -721,14 +859,19 @@ class MainAIEngine:
       "duokhi hu",
       "sad hu",
       "mood kharab hai",
-      "dil toot gaya"
+      "dil toot gaya",
+      "rula mat"
     ],
     "responses": [
       "Arey kya hua {name} bhai? Rona mat, kisne pareshan kiya batayo mujhe! 😠",
       "Bhai tension mat le, sab theek ho jayega. Kuch hua hai kya?",
       "Chill maaro bhai! Ek baar lambi saans lo aur batao kya tension hai? 🫂"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "breakup": "Arey bhai, dil mat chota karo! Life me aage bohot accha likha hai! 💪",
+      "padhai": "Tension mat lo bhai, break lo aur thodi der baad aaram se padhna! 📚",
+      "ghar": "Sab sorted ho jayega bhai, calm raho thoda! ☕"
+    }
   },
   {
     "tag": "bot_confusion",
@@ -756,7 +899,10 @@ class MainAIEngine:
     "responses": [
       "Mausam ka toh pata nahi bhai, par tu ghar pe baith ke chill maar! ☀️🌧️"
     ],
-    "context_responses": {}
+    "context_responses": {
+      "garmi": "Thanda paani piyo aur AC/fan me baitho bhai! 🧊",
+      "baarish": "Chai pakode ka scene banao fir toh! ☕🌧️"
+    }
   },
   {
     "tag": "bad_day_feeling",
@@ -772,7 +918,7 @@ class MainAIEngine:
       "accha nahi gaya"
     ],
     "responses": [
-      "Arey kya hua Pankaj bhai? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!",
+      "Arey kya hua {name}? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!",
       "Oh ho! Kya tension ho gayi bhai? Koi lafda hua kya aaj?",
       "Koi nahi bhai, har din ek jaisa nahi hota. Thoda aaram karo aur chill maaro! ☕"
     ],
@@ -781,17 +927,44 @@ class MainAIEngine:
   {
     "tag": "clarification_correction",
     "patterns": [
-      "din ki baat kar raha hu",
+      "din ki  kar raha hu",
       "teri baat nahi kar raha",
       "are bhai din ki baat kar raha hu teri nahi",
       "tujhe nahi bol raha",
       "dhyan se sun"
     ],
     "responses": [
-      "Acha acha! My bad Pankaj bhai, main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?",
+      "Acha acha!  {name} My bad , main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?",
       "Sahi pakde hain! Main thoda confuse ho gaya tha. Haan bata kya hua tha aaj?"
     ],
     "context_responses": {}
+  },
+  {
+    "tag": "custom_6480",
+    "patterns": [
+      "minecraft"
+    ],
+    "responses": [
+      "Oo bhai phri toh next level kam hoga toh kya socha hai koi building Bani hai ya minecraft with create mod Khel na hai 😋"
+    ],
+    "context_responses": {}
+  },
+  {
+    "tag": "food_hungry",
+    "patterns": [
+      "bhookh lagi hai",
+      "khana khana hai",
+      "kya khau",
+      "kuch khane ka man hai",
+      "khana peena"
+    ],
+    "responses": [
+      "Arey pehle pet pooja, fir kaam dooja! 🍕 Burgers, Momos ya mast ghar ka khana?"
+    ],
+    "context_responses": {
+      "momos": "Teekhi chutney ke sath momos ka alag hi swad hai! 🥟🔥",
+      "burger": "Extra cheese burger manga lo fir toh! 🍔"
+    }
   }
 ]
 
@@ -822,7 +995,11 @@ class MainAIEngine:
                 if not isinstance(item, dict):
                     continue
 
-                if "full_text" in item or item.get("source", "").endswith(".pdf") or "image" in item.get("pattern", ""):
+                if (
+                    "full_text" in item
+                    or item.get("source", "").endswith(".pdf")
+                    or "image" in item.get("pattern", "")
+                ):
                     continue
 
                 clean_patterns = [
@@ -842,7 +1019,9 @@ class MainAIEngine:
                             "tag": item.get("tag", "general"),
                             "patterns": clean_patterns,
                             "responses": clean_responses,
-                            "context_responses": item.get("context_responses", {}),
+                            "context_responses": item.get(
+                                "context_responses", {}
+                            ),
                         }
                     )
 
@@ -928,6 +1107,187 @@ class MainAIEngine:
 
         return None
 
+    def handle_date_time_utilities(self, text_lower):
+        now = datetime.now()
+
+        if "kal" in text_lower:
+            if "pehle" in text_lower or "beeta" in text_lower:
+                target = now - timedelta(days=1)
+                return f"📅 **Past Date Info:** Kal **{target.strftime('%A')}** thi ({target.strftime('%d %B %Y')})."
+            else:
+                target = now + timedelta(days=1)
+                return f"📅 **Future Date Info:** Kal **{target.strftime('%A')}** hoga ({target.strftime('%d %B %Y')})."
+
+        if "parso" in text_lower:
+            if "pehle" in text_lower or "beeta" in text_lower:
+                target = now - timedelta(days=2)
+                return f"📅 **Past Date Info:** Parso **{target.strftime('%A')}** thi ({target.strftime('%d %B %Y')})."
+            else:
+                target = now + timedelta(days=2)
+                return f"📅 **Future Date Info:** Parso **{target.strftime('%A')}** hoga ({target.strftime('%d %B %Y')})."
+
+        # FIXED REGEX: Matches 'baad', 'bad', and typo 'bada' along with 'pehle'
+        match_days = re.search(r"(\d+)\s*din\s*(baad|bad|bada|pehle)", text_lower)
+        if match_days:
+            days = int(match_days.group(1))
+            mode = match_days.group(2)
+
+            if mode == "pehle":
+                target_date = now - timedelta(days=days)
+                return f"🗓️ **Past Date:** {days} din pehle **{target_date.strftime('%d %B %Y (%A)')}** thi."
+            else:
+                target_date = now + timedelta(days=days)
+                return f"🗓️ **Future Date:** {days} din baad **{target_date.strftime('%d %B %Y (%A)')}** hogi."
+
+        if any(
+            k in text_lower
+            for k in ["aaj ka din", "aaj din", "kaunsa din", "what day"]
+        ):
+            return f"📅 **Date & Day Info:** Aaj **{now.strftime('%A')}** hai ({now.strftime('%d %B %Y')})."
+
+        if any(
+            k in text_lower for k in ["aaj date", "aaj ki date", "today date", "ajj ka din"]
+        ):
+            return f"📅 **Current Date:** {now.strftime('%d-%m-%Y')} ({now.strftime('%A')})"
+
+        if any(
+            k in text_lower
+            for k in ["time kya hua", "kitne baje", "current time"]
+        ):
+            return f"⏰ **Current Time:** {now.strftime('%I:%M %p')}"
+
+        return None
+
+
+    def handle_converters(self, text_lower):
+        match = re.search(
+            r"(\d+\.?\d*)\s*([a-zA-Z]+)\s*(?:to|in)?\s*([a-zA-Z]+)", text_lower
+        )
+        if not match:
+            return None
+
+        val = float(match.group(1))
+        unit_from = match.group(2).lower()
+        unit_to = match.group(3).lower()
+
+        length_factors = {
+            "cm": 0.01,
+            "centimeter": 0.01,
+            "centimeters": 0.01,
+            "m": 1.0,
+            "meter": 1.0,
+            "meters": 1.0,
+            "km": 1000.0,
+            "kilometer": 1000.0,
+            "kilometers": 1000.0,
+            "feet": 0.3048,
+            "foot": 0.3048,
+            "ft": 0.3048,
+            "inch": 0.0254,
+            "inches": 0.0254,
+            "in": 0.0254,
+            "mile": 1609.34,
+            "miles": 1609.34,
+            "yard": 0.9144,
+            "yards": 0.9144,
+        }
+
+        weight_factors = {
+            "g": 1.0,
+            "gram": 1.0,
+            "grams": 1.0,
+            "kg": 1000.0,
+            "kilogram": 1000.0,
+            "kilograms": 1000.0,
+            "mg": 0.001,
+            "milligram": 0.001,
+            "lb": 453.592,
+            "lbs": 453.592,
+            "pound": 453.592,
+            "pounds": 453.592,
+        }
+
+        data_factors = {
+            "kb": 1 / 1024,
+            "mb": 1.0,
+            "gb": 1024.0,
+            "tb": 1024 * 1024.0,
+        }
+
+        # Converter output display fix (Clean Number format)
+        if unit_from in length_factors and unit_to in length_factors:
+            base_val = val * length_factors[unit_from]
+            res = base_val / length_factors[unit_to]
+            res_str = f"{res:,.0f}" if res.is_integer() else f"{res:,.2f}"
+            return f"📏 **Unit Converter:** {val} {unit_from} = **{res_str} {unit_to}**"
+
+        if unit_from in weight_factors and unit_to in weight_factors:
+            base_val = val * weight_factors[unit_from]
+            res = base_val / weight_factors[unit_to]
+            res_str = f"{res:,.0f}" if res.is_integer() else f"{res:,.2f}"
+            return f"⚖️ **Weight Converter:** {val} {unit_from} = **{res_str} {unit_to}**"
+
+        if unit_from in data_factors and unit_to in data_factors:
+            base_val = val * data_factors[unit_from]
+            res = base_val / data_factors[unit_to]
+            res_str = f"{res:,.0f}" if res.is_integer() else f"{res:,.2f}"
+            return f"💾 **Storage Converter:** {val} {unit_from} = **{res_str} {unit_to}**"
+
+        return None
+
+    def summarize_text(self, text, max_sentences=2):
+        sentences = [
+            s.strip() for s in re.split(r"[.!?\n]", text) if s.strip()
+        ]
+        if len(sentences) <= max_sentences:
+            return text
+
+        words = re.findall(r"\w+", text.lower())
+        stop_words = {
+            "is",
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "to",
+            "in",
+            "of",
+            "for",
+            "on",
+            "with",
+            "this",
+            "that",
+            "hai",
+            "ko",
+            "ki",
+            "se",
+        }
+        filtered_words = [
+            w for w in words if w not in stop_words and len(w) > 2
+        ]
+
+        if not filtered_words:
+            return ". ".join(sentences[:max_sentences]) + "."
+
+        word_freq = Counter(filtered_words)
+
+        sentence_scores = {}
+        for idx, sentence in enumerate(sentences):
+            score = 0
+            for word in re.findall(r"\w+", sentence.lower()):
+                if word in word_freq:
+                    score += word_freq[word]
+            sentence_scores[idx] = score
+
+        ranked = sorted(
+            sentence_scores.items(), key=lambda x: x[1], reverse=True
+        )
+        top_indices = sorted([r[0] for r in ranked[:max_sentences]])
+
+        summary = " ".join([sentences[i] for i in top_indices])
+        return f"📝 **Offline Text Summary:**\n{summary}"
+
     def check_dynamic_advice(self, text_lower):
         mood_triggers = {
             "bored": ["bore", "boring", "paka", "kuch nahi kar raha"],
@@ -980,7 +1340,9 @@ class MainAIEngine:
             "e": math.e,
         }
 
-        match = re.search(r"(?:[a-z]+\([^)]+\)|[\d\.\s\+\-\*\/\(\)\^\,]+)+", clean_text)
+        match = re.search(
+            r"(?:[a-z]+\([^)]+\)|[\d\.\s\+\-\*\/\(\)\^\,]+)+", clean_text
+        )
         if match:
             expr = match.group().strip()
             expr = re.sub(r"[\+\-\*\/]+$", "", expr).strip()
@@ -1060,15 +1422,20 @@ class MainAIEngine:
                         return resp.replace("{name}", self.user_name)
         return None
 
-    def format_extracted_content(self, raw_text, source_name, content_type="Image"):
-        """Formats extracted raw text completely without truncation."""
-        clean_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+    def format_extracted_content(
+        self, raw_text, source_name, content_type="Image"
+    ):
+        clean_lines = [
+            line.strip() for line in raw_text.splitlines() if line.strip()
+        ]
         if not clean_lines:
             return f"🖼️ **{content_type} Scan ({source_name}):** Is file me koi text nahi mil saka."
 
         total_words = len(raw_text.split())
 
-        explanation = f"📋 **{content_type} Analysis & Summary ({source_name})**\n"
+        explanation = (
+            f"📋 **{content_type} Analysis & Summary ({source_name})**\n"
+        )
         explanation += f"• **Total Words Detected:** {total_words}\n"
         explanation += f"• **Total Lines Extracted:** {len(clean_lines)}\n\n"
         explanation += "💡 **Point-wise Breakdown (Extracted Content):**\n\n"
@@ -1079,19 +1446,19 @@ class MainAIEngine:
         return explanation
 
     def check_latest_media_memory_reply(self, text_lower):
-        """Dynamic Priority Engine: Sabse aakhiri (Latest) uploaded File/Image pick karega"""
         if not isinstance(self.memory_db, list):
             return None
 
-        # Reverse loop guarantees ki aakhiri bheji gayi file sabse pehle mil gi
         for item in reversed(self.memory_db):
             if not isinstance(item, dict):
                 continue
 
             tag = item.get("tag", "")
             source = item.get("source", "").lower()
-            
-            is_image = tag == "image_context" or source.endswith((".png", ".jpg", ".jpeg", ".webp"))
+
+            is_image = tag == "image_context" or source.endswith(
+                (".png", ".jpg", ".jpeg", ".webp")
+            )
             is_pdf = tag == "pdf_context" or source.endswith(".pdf")
 
             if (is_image or is_pdf) and "full_text" in item:
@@ -1099,8 +1466,31 @@ class MainAIEngine:
                 source_name = item.get("source", "Uploaded File")
                 content_type = "Image" if is_image else "PDF Document"
 
-                # 1. Total calculation match for Images
-                if is_image and any(k in text_lower for k in ["total", "sum", "hisab", "amount", "fees", "kitna"]):
+                if any(
+                    k in text_lower
+                    for k in [
+                        "summary",
+                        "short karo",
+                        "chota karo",
+                        "chota karke batao",
+                    ]
+                ):
+                    return (
+                        f"📄 **Summary for {source_name}:**\n"
+                        + self.summarize_text(file_text)
+                    )
+
+                if is_image and any(
+                    k in text_lower
+                    for k in [
+                        "total",
+                        "sum",
+                        "hisab",
+                        "amount",
+                        "fees",
+                        "kitna",
+                    ]
+                ):
                     found_nums = re.findall(r"\b\d[\d,]*\b", file_text)
                     clean_nums = []
                     for n in found_nums:
@@ -1113,27 +1503,46 @@ class MainAIEngine:
                         num_str = " + ".join([f"{v:,}" for v in clean_nums])
                         return f"🖼️ **Image Total Calculation ({source_name}):**\n\n• **Detected Numbers:** {num_str}\n• **Total Amount:** {total_val:,}"
 
-                # 2. General Explanation Keywords
                 explain_keywords = [
-                    "explain", "samjha", "samjhao", "detail", "kya keh raha hai",
-                    "matlab", "summary", "kya hai", "scan", "image", "photo",
-                    "pic", "ocr", "likha", "isme", "batao", "bata", "pdf", "document"
+                    "explain",
+                    "samjha",
+                    "samjhao",
+                    "detail",
+                    "kya keh raha hai",
+                    "matlab",
+                    "summary",
+                    "kya hai",
+                    "scan",
+                    "image",
+                    "photo",
+                    "pic",
+                    "ocr",
+                    "likha",
+                    "isme",
+                    "batao",
+                    "bata",
+                    "pdf",
+                    "document",
                 ]
                 if any(k in text_lower for k in explain_keywords):
-                    return self.format_extracted_content(file_text, source_name, content_type)
+                    return self.format_extracted_content(
+                        file_text, source_name, content_type
+                    )
 
-                # 3. Exact word context match in text
-                words = [w for w in re.findall(r"\w+", text_lower) if len(w) > 3]
+                words = [
+                    w for w in re.findall(r"\w+", text_lower) if len(w) > 3
+                ]
                 for w in words:
                     if w in file_text.lower():
                         pos = file_text.lower().find(w)
                         start = max(0, pos - 50)
                         end = min(len(file_text), pos + 250)
-                        snippet = file_text[start:end].replace("\n", " ").strip()
+                        snippet = (
+                            file_text[start:end].replace("\n", " ").strip()
+                        )
                         icon = "🖼️" if is_image else "📄"
                         return f"{icon} **Context Match from {source_name}**\n\n...{snippet}..."
 
-                # Sabse recent file mil chuki hai, isliye purani check nahi karenge
                 break
 
         return None
@@ -1145,15 +1554,22 @@ class MainAIEngine:
 
         text_lower = sub_text.lower()
 
-        # 1. Direct Latest Media Priority Check (Handles PDF after Image & Image after PDF correctly)
-        media_reply = self.check_latest_media_memory_reply(text_lower)
-        if media_reply:
-            return media_reply
-
-        # 2. Dynamic Controls & Math
         time_corrected = self.check_time_greeting_correction(text_lower)
         if time_corrected:
             return time_corrected
+
+        date_time_utility = self.handle_date_time_utilities(text_lower)
+        if date_time_utility:
+            return date_time_utility
+
+        converter_ans = self.handle_converters(text_lower)
+        if converter_ans:
+            return converter_ans
+
+        if any(
+            k in text_lower for k in ["summarize", "summary", "chota karo"]
+        ) and len(sub_text.split()) > 10:
+            return self.summarize_text(sub_text)
 
         advice = self.check_dynamic_advice(text_lower)
         if advice:
@@ -1163,6 +1579,16 @@ class MainAIEngine:
         if math_ans:
             return math_ans
 
+        # SQLite Search
+        sqlite_ans = self.search_sqlite_knowledge(sub_text)
+        if sqlite_ans:
+            return sqlite_ans
+
+        # Media Context
+        media_reply = self.check_latest_media_memory_reply(text_lower)
+        if media_reply:
+            return media_reply
+
         hist_ans = self.get_full_session_history_reply(sub_text)
         if hist_ans:
             return hist_ans
@@ -1171,7 +1597,6 @@ class MainAIEngine:
         if ctx_reply:
             return ctx_reply
 
-        # 3. Strict Pattern Exact Matches
         for item in self.memory_db:
             if isinstance(item, dict) and "patterns" in item:
                 if text_lower in [p.lower() for p in item["patterns"]]:
@@ -1182,7 +1607,6 @@ class MainAIEngine:
                         )
                         return chosen.replace("{name}", self.user_name)
 
-        # 4. Classifier & Fuzzy Match Fallbacks
         predicted_tag, score = self.classifier.predict_intent(
             text_lower, threshold=0.20
         )
@@ -1207,7 +1631,9 @@ class MainAIEngine:
         ):
             tag = fuzzy_item.get("tag")
             self.current_context = tag
-            chosen = self.get_non_repeating_choice(tag, fuzzy_item["responses"])
+            chosen = self.get_non_repeating_choice(
+                tag, fuzzy_item["responses"]
+            )
             return chosen.replace("{name}", self.user_name)
 
         return None
@@ -1225,24 +1651,15 @@ class MainAIEngine:
 
         self.session_history.append({"role": "user", "content": raw_text})
 
-        # Process complete query first before sentence splitting
-        # 1. Pehle Math expression ke aage-peeche comma inject karo
         math_pattern = r"(\d+[\+\-\*\/\^]+\d+[\+\-\*\/\d]*)"
         prepared_text = re.sub(math_pattern, r" , \1 , ", raw_text)
 
-        # 2. String ko delimiters aur spaces par split karo
         parts = re.split(r",|\.|\?|\s+aur\s+|\s+or\s+", prepared_text)
 
-        # 3. Agar split karne par 1 se zyada parts bane (jaise math + hi), toh sub-queries process karo
-        if len([p for p in parts if p.strip()]) > 1:
-            pass  # Niche wala looping logic apne aap handles kar lega
-        else:
-            # Single statement hone par hi direct process karo
+        if len([p for p in parts if p.strip()]) == 1:
             ans = self.process_single_query(raw_text)
             if ans:
                 return ans
-
-
 
         responses = []
         unknown_part = None
@@ -1282,7 +1699,10 @@ if __name__ == "__main__":
     ai = MainAIEngine(user_name=user_name)
 
     print("\n========================================================")
-    print(f"  FINAL ENGINE V5.2 CONTEXT-FORMATTED ACTIVE | File: {ai.memory_file}")
+    print(
+        f"  FINAL ENGINE V5.6 SQLITE & UTILITY INTEGRATED | File:"
+        f" {ai.memory_file}"
+    )
     print("========================================================\n")
 
     print(f"AI: {ai.generate_proactive_greeting()}\n")
@@ -1291,7 +1711,9 @@ if __name__ == "__main__":
         try:
             user_input = input(f"{ai.user_name}: ").strip()
             if user_input.lower() in ["exit", "quit"]:
-                print(f"Session Ended. Permanent Brain saved in {ai.memory_file}!")
+                print(
+                    f"Session Ended. Permanent Brain saved in {ai.memory_file}!"
+                )
                 break
 
             response = ai.respond(user_input)

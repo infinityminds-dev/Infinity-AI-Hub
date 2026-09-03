@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import difflib
 import glob
 import json
@@ -6,6 +6,7 @@ import math
 import os
 import random
 import re
+import sqlite3
 from collections import Counter
 
 # --- TENSORFLOW NEURAL NETWORK IMPORTS ---
@@ -21,6 +22,105 @@ try:
 except ImportError:
     TF_AVAILABLE = False
     print("\n[Notice] TensorFlow not found. Running on standard fallback mode.")
+
+
+class KnowledgeDatabaseManager:
+    """Exact v5.6 SQLite Knowledge Database Manager (tech_knowledge table)"""
+
+    def __init__(self, db_name="knowledge.db"):
+        self.db_name = db_name
+        self.init_sqlite_db()
+
+    def init_sqlite_db(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tech_knowledge (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                topic TEXT UNIQUE,
+                definition TEXT
+            )
+        """
+        )
+
+        cursor.execute("SELECT COUNT(*) FROM tech_knowledge")
+        if cursor.fetchone()[0] == 0:
+            defaults = [
+                (
+                    "cpu",
+                    "CPU (Central Processing Unit) computer ka brain hota hai jo saari calculations aur instructions execute karta hai.",
+                ),
+                (
+                    "ram",
+                    "RAM (Random Access Memory) temporary memory hoti hai jo open apps aur active tasks ko fast run karti hai.",
+                ),
+                (
+                    "python",
+                    "Python ek high-level, interpreted programming language hai jo AI, Web Dev aur Automation me use hoti hai.",
+                ),
+                (
+                    "html",
+                    "HTML (HyperText Markup Language) web pages ka basic structure banane ke liye istemal hoti hai.",
+                ),
+                (
+                    "sql",
+                    "SQL (Structured Query Language) databases me data store, search aur manage karne ki language hai.",
+                ),
+            ]
+            cursor.executemany(
+                "INSERT OR IGNORE INTO tech_knowledge (topic, definition) VALUES (?, ?)",
+                defaults,
+            )
+            conn.commit()
+
+        conn.close()
+
+    def search_sqlite_knowledge(self, query):
+        words = re.findall(r"\w+", query.lower())
+        ignore = {
+            "kya",
+            "hai",
+            "kaun",
+            "sa",
+            "batao",
+            "bata",
+            "kisi",
+            "ko",
+            "bhai",
+            "samjha",
+        }
+        clean_words = [w for w in words if w not in ignore and len(w) > 1]
+
+        if not clean_words:
+            return None
+
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+
+        for word in clean_words:
+            cursor.execute(
+                "SELECT topic, definition FROM tech_knowledge WHERE LOWER(topic) = ? OR LOWER(topic) LIKE ?",
+                (word, f"%{word}%"),
+            )
+            row = cursor.fetchone()
+            if row:
+                conn.close()
+                return f"🧠 **Knowledge Base ({row[0].upper()}):** {row[1]}"
+
+        conn.close()
+        return None
+
+    def add_custom_topic(self, topic, definition):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO tech_knowledge (topic, definition) VALUES (?, ?)",
+            (topic.lower().strip(), definition.strip())
+        )
+        conn.commit()
+        conn.close()
 
 
 class SmartIntentClassifier:
@@ -76,7 +176,6 @@ class SmartIntentClassifier:
         vocab_size = len(self.tokenizer.word_index) + 1
         num_classes = len(tags)
 
-        # Building Real Neural Network Architecture
         self.model = Sequential([
             Embedding(vocab_size, 16, input_length=self.max_len),
             GlobalAveragePooling1D(),
@@ -85,8 +184,6 @@ class SmartIntentClassifier:
         ])
 
         self.model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        
-        # Training the Deep Learning Model silently
         self.model.fit(X_train, y_train, epochs=100, verbose=0)
 
     def predict_intent(self, text, threshold=0.40):
@@ -117,6 +214,7 @@ class MainAIEngine:
         self.current_context = None
         self.last_responses = {}
 
+        self.db_manager = KnowledgeDatabaseManager("knowledge.db")
         self.memory_file = self.handle_smart_memory_file()
         self.memory_db = []
 
@@ -155,9 +253,7 @@ class MainAIEngine:
 
         if "pankaj" in self.user_name:
             print("\n" + "=" * 65)
-            print(
-                "❌ ACCESS DENIED: Cannot use developer signature name!"
-            )
+            print("❌ ACCESS DENIED: Cannot use developer signature name!")
             print("=" * 65 + "\n")
             self.user_name = "guest_user"
 
@@ -167,9 +263,7 @@ class MainAIEngine:
         ]
 
         if user_specific_files:
-            print(
-                f"\n[Info] Memory File Matched: {user_specific_files[0]}"
-            )
+            print(f"\n[Info] Memory File Matched: {user_specific_files[0]}")
             return user_specific_files[0]
 
         random_id = random.randint(1000, 9999)
@@ -179,651 +273,250 @@ class MainAIEngine:
 
     def load_memory(self):
         default_data = [
-  {
-    "tag": "greeting",
-    "patterns": [
-      "hi",
-      "hello",
-      "hey",
-      "namaste",
-      "oi",
-      "hello bhai",
-      "kaise ho",
-      "kya haal hai",
-      "hey bro",
-      "wassup"
-    ],
-    "responses": [
-      "Arey {name} bhai! Kya scene hai aaj ka? 😎",
-      "Oi {name}! Bol bhai, aaj kya naya chal raha hai?",
-      "Hey {name}! Kya haal chaal? Kuch spicy khabar hai kya aaj?"
-    ],
-    "context_responses": {
-      "thik": "Badiya bhai! Aur batao aaj kya plan hai?",
-      "mast": "Sahi hai bhai, aise hi mast raho! 😎",
-      "badhiya": "Ekdam zabardast! Kuch khas chal raha hai kya?"
-    }
-  },
-  {
-    "tag": "status_ok",
-    "patterns": [
-      "theek hu",
-      "thik hu",
-      "mast hu",
-      "badhiya hu",
-      "badiya hu",
-      "sab sahi hai",
-      "ekdam badiya",
-      "mast hu bhai",
-      "all good",
-      "ha sab theek hai",
-      "ha sab theek hai tu bata",
-      "sab theek hai"
-    ],
-    "responses": [
-      "Sahi hai bawa! Mast raho ekdam! Waise aaj kya special khaya? 🍕",
-      "Sunkar badhiya laga {name}! Chal bata fir, aaj din kaisa gaya? 🔥",
-      "Badiya bhai! Vaise aaj koi naya kand kiya ya chup chaap baithe ho? 👀"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "acknowledgement",
-    "patterns": [
-      "ok",
-      "okay",
-      "k",
-      "hmm",
-      "accha",
-      "achha",
-      "sahi hai",
-      "got it",
-      "samajh gaya",
-      "thik hai"
-    ],
-    "responses": [
-      "Set hai bhai! 👍 Aur batao, koi naye gaane sun rahe ho kya aajkal?",
-      "Ekdam clear! Waise abhi free ho ya koi kaam nipta rahe ho?",
-      "Done bhai! Waise itna chup kyo ho, kuch bolo na! 😁"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "courtesy",
-    "patterns": [
-      "thanks",
-      "thank you",
-      "shukriya",
-      "dhanyawad",
-      "thanks bhai",
-      "thx"
-    ],
-    "responses": [
-      "Arre chill karo {name} bhai! Apne hi bande ho. 🙌",
-      "Arre welcome bhai! Isme thanks kaisa, party do ab! 🍕",
-      "Always active tere liye {name}! Kuch aur chahiye toh bol!"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "goodbye",
-    "patterns": [
-      "bye",
-      "goodbye",
-      "chalo bye",
-      "see you",
-      "alvida",
-      "tc",
-      "take care"
-    ],
-    "responses": [
-      "Chalo {name} bhai! Milte hain break ke baad. 👋",
-      "Jao jao, aaram karo! Apna khyal rakhna bhai! 🔥",
-      "Tata bhai! Kuch lafda ho toh turant yaad karna!"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "agreement_disagreement",
-    "patterns": [
-      "nahi chahiye",
-      "no",
-      "na",
-      "bilkul nahi"
-    ],
-    "responses": [
-      "Koi nahi bhai, jaisa tera mood! 🤝 Kuch aur baat karein?",
-      "Theek hai bhai, no problem. Waise bored toh nahi ho rahe?",
-      "Sahi hai! Jab zaroorat lage bol dena, apun idhar hi hai."
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "casual_chitchat",
-    "patterns": [
-      "kuch nahi",
-      "kuchh nahi",
-      "kuch nahi chal raha hai",
-      "kuchh nahi chal raha hai",
-      "nahi soch aise hi baat kar lu",
-      "aise hi",
-      "bas aise hi",
-      "kuch khas nahi",
-      "life ma toh kuch nahi ho raha hai",
-      "life me kuch nahi ho raha",
-      "kuch nahi ho raha"
-    ],
-    "responses": [
-      "Arey aise kaise kuch nahi! Koi mast movie ya series dekhi hogi? 🍿",
-      "Bina kisi वजह ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨",
-      "Kuch khas nahi? Arey chill karo fir! Koi accha gaana suggest karu kya?"
-    ],
-    "context_responses": {
-      "ha": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶",
-      "kar": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶",
-      "yes": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶",
-      "na": "Koi baat nahi bhai! Fir kya karne ka plan hai?"
-    }
-  },
-  {
-    "tag": "compliment",
-    "patterns": [
-      "good",
-      "nice",
-      "great",
-      "badiya",
-      "bohot achha",
-      "mast",
-      "oo bahi good",
-      "op",
-      "superb",
-      "awesome"
-    ],
-    "responses": [
-      "Dil jeet liya {name} bhai! ❤️ Aur batao itni tareef ka raaz?",
-      "Thanks brother! 🔥 Tu bhi ekdam OP banda hai!",
-      "Khushi hui sunkar! Aise hi vibe banaye rakho! 😎"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "bot_identity",
-    "patterns": [
-      "tum kon hon",
-      "tum kaun ho",
-      "who are you",
-      "tumhe kisne banaya",
-      "who created you",
-      "about yourself",
-      "tera naam kya hai",
-      "tera naam kya",
-      "tera naam"
-    ],
-    "responses": [
-      "Main INFINITY-AI hoon! 🤖 Mujhe Pankaj Singh ne Python me scratch se banaya hai. Agar aapko developer ke baare me aur jaanna hai toh unke GitHub pe jaa sakte hain aur unke Discord pe pooch sakte hain sawal ya koi suggestion. Discord ki link unke GitHub profile me hai.\n\nDeveloper GitHub Profile: infinityminds-dev"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "daily_activity_suggestions",
-    "patterns": [
-      "chal bata aaj kya karna hai",
-      "aaj kya kare",
-      "kya kare aaj",
-      "aaj kya karna chahiye",
-      "bor ho raha hu kya karu",
-      "kya karu aaj",
-      "bor ho raha hu",
-      "kya plan hai ajj ka",
-      "kya plan hai aaj ka"
-    ],
-    "responses": [
-      "Arey bawa mast plan banate hain! 🎯 Coding ka mood hai, game khelne ka scene hai, ya chill music sunke aaram karna hai? Kya set karein?"
-    ],
-    "context_responses": {
-      "music": "Mast playlist lagao aur headphone pehen ke chill karo bhai! 🎧🎶",
-      "gaana": "Koi apna favourite gaana lagao aur speakers full kar do! 🎶🔊",
-      "game": "Kaunsa game khelne ka plan hai? PC game ya mobile game? 🎮🔥",
-      "mobile": "Mast BGMI, Free Fire ya Call of Duty lagao aur dosto ke saath machao! 📱💥",
-      "pc": "Sahi hai! GTA, Valorant ya Counter-Strike me se kya chalayein? 🖥️🎯",
-      "coding": "Sahi hai! Aaj kaunsa naya feature code karne wale ho? 💻⚡",
-      "code": "Python me koi naya logic likhe kya aaj? 🐍⚡",
-      "walk": "Sahi hai! Thodi taazi hawa lo aur fresh ho ke aao! 🚶‍♂️✨",
-      "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. ベッド💤",
-      "soja": "Aaram se neend poori karo, rest bohot zaroori hai! 😴💤"
-    }
-  },
-  {
-    "tag": "music_intent",
-    "patterns": [
-      "music",
-      "music sun lo",
-      "gaana sun leta hu",
-      "chal music sun leta hu",
-      "gaane sunne hain",
-      "songs",
-      "song sununga"
-    ],
-    "responses": [
-      "Music hi toh asli vibe hai bhai! 🎶 Lofi, Punjabi, ya Rock—aaj kaunsi vibe chalegi?"
-    ],
-    "context_responses": {
-      "punjabi": "Zabardast! High energy Punjabi beats lagao aur mood banao! 🎧🔥",
-      "lofi": "Chilled Lofi beats suno, mind ekdam calm ho jayega! ☕🎶",
-      "sad": "Arre kya hua bhai? Mood off hai kya jo sad songs sun rahe ho? 💔"
-    }
-  },
-  {
-    "tag": "game_intent",
-    "patterns": [
-      "game khelna hai",
-      "mobile game",
-      "pc game",
-      "game khel lu",
-      "chal game khelte hain",
-      "gaming"
-    ],
-    "responses": [
-      "Gaming mode ON! 🎮 BGMI, Valorant, ya GTA—aaj kahan machane ka plan hai?"
-    ],
-    "context_responses": {
-      "bgmi": "Arey waah! Chicken Dinner pakka karke aana bhai! 🪖💥",
-      "freefire": "Booyah maar ke aao bhai, full rush gameplay! 🎯🔥",
-      "valorant": "Clutch marna padega aaj! Headshots ready rakho! 🖥️🎯",
-      "gta": "City me ghoomne ka aur tabaahi machane ka plan hai lagta hai! 🚗💥"
-    }
-  },
-  {
-    "tag": "tech_coding_fallback",
-    "patterns": [
-      "python",
-      "coding",
-      "code",
-      "programming",
-      "programming language",
-      "javascript",
-      "html",
-      "css",
-      "java",
-      "c++",
-      "bug",
-      "error",
-      "loop",
-      "function",
-      "array",
-      "database",
-      "sql",
-      "tech",
-      "github",
-      "tujha coding ka bare ma kuch pata hai",
-      "tumhe coding ke bare me pata hai",
-      "coding aati hai kya",
-      "coding ke bare me pata hai",
-      "loop kya hai",
-      "Meri help karga coding ma"
-    ],
-    "responses": [
-      "Mujhe abhi coding aur tech ke baare me zyada jankari nahi hai 😅. Iske liye aap ChatGPT ya Gemini jaise Large Language Models (LLM) se pooch sakte hain 🤖. Developer ne abhi mujhe itna develop nahi kiya hai, lekin in future main iska jawab zaroor de paunga!"
-    ],
-    "context_responses": {
-      "python": "Python toh meri core language hai! Developer ne mujhe Python se hi banaya hai 🐍⚡",
-      "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖"
-    }
-  },
-  {
-    "tag": "low_energy_mood",
-    "patterns": [
-      "maan nahi kar raha hai kuch karne ka",
-      "man nahi kar raha hai",
-      "kuch karne ka man nahi hai",
-      "aaj kuch nahi karna",
-      "man nahi hai aaj",
-      "aaj mood off hai",
-      "thaka hua hu"
-    ],
-    "responses": [
-      "Koi nahi bhai! Kabhi kabhi aaram karna hi best hota hai. Chill maaro, koi zabardasti nahi! 🛌"
-    ],
-    "context_responses": {
-      "kya hua": "Koi tension mat lo bhai, chill karo. Baatein karni ho toh main hu na!",
-      "kisi se baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"
-    }
-  },
-  {
-    "tag": "bot_status_query",
-    "patterns": [
-      "tu bata",
-      "tu bata bhai",
-      "apna batao",
-      "aur batao",
-      "kya ho raha hai",
-      "tu bata kya kar na hai"
-    ],
-    "responses": [
-      "Main toh chill mode me hu bhai! Tu bata, aaj kya naya chal raha hai life me?",
-      "ma toh hamesha ready hai! Tu bol aaj kya tufani karna hai?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_2064",
-    "patterns": [
-      "ooo",
-      "oo",
-      "oho",
-      "wah"
-    ],
-    "responses": [
-      "Full bawaal vibe! 🔥💯"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "bot_capabilities",
-    "patterns": [
-      "tu kya kar sakta hai",
-      "tum kya kar sakte ho",
-      "kya kya kar sakte ho",
-      "tum kya kya kar sakte ho",
-      "tumhare features kya hain",
-      "what can you do"
-    ],
-    "responses": [
-      "ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Jokes aur advice dena 💡\n4. Teri baatein aur memory yaad rakhna 🧠\n\nBol aaj kis cheez me madad chahiye?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "bot_current_activity",
-    "patterns": [
-      "tu kya kar raha hai",
-      "tum kya kar rahe ho",
-      "kya kar raha hai",
-      "kya kar rahe ho"
-    ],
-    "responses": [
-      "Bas {name} bhai, beth ke tere reply ka hi wait kar raha tha! Aur bata kya scene hai?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_5567",
-    "patterns": [
-      "i am back",
-      "wapas aa gaya",
-      "back"
-    ],
-    "responses": [
-      "Arey bawa aa gaya wapas! 🔥 Chal bata kahan gaye the?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_6423",
-    "patterns": [
-      "good Morning bhai",
-      "good morning",
-      "good morning bro",
-      "gm"
-    ],
-    "responses": [
-      "Good Morning {name}! 🌅 Chai-paani ho gaya? Aaj kya machane wale ho?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_1812",
-    "patterns": [
-      "Good night bhai",
-      "good night",
-      "good night bro",
-      "gn"
-    ],
-    "responses": [
-      "Good Night bhai! 🌙 Phone side me rakho aur mast neend lo!"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_5087",
-    "patterns": [
-      "Good evening",
-      "good evening bhai",
-      "good evening bro",
-      "ge"
-    ],
-    "responses": [
-      "Good Evening bhai! 🌆 Sham ka kya plan hai fir?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_afternoon",
-    "patterns": [
-      "good afternoon",
-      "good afternoon bhai",
-      "afternoon bro"
-    ],
-    "responses": [
-      "Good Afternoon {name} bhai! ☀️ Khana peena ho gaya na?"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_jokes",
-    "patterns": [
-      "joke sunao",
-      "chutkula sunao",
-      "koi joke batao",
-      "hassa do bhai",
-      "ek aur joke",
-      "joke"
-    ],
-    "responses": [
-      "Teacher: 1 se 10 tak ginti sunao!\nStudent: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10!\nTeacher: Shabash! Aage?\nStudent: J, Q, K! 🃏😂",
-      "Ek aadmi doctor ke paas gaya: Doctor sahab jab mai chai pita hu to meri aakh me dard hota hai!\nDoctor: Pehle cup me se chammach nikal liya karo! ☕😜",
-      "Pappu: Yaar mera mobile pani me gir gaya aur kharab ho gaya.\nFriend: Toh dukandar ko dikhaya?\nPappu: Haan, usne bola isme rice me daal ke rakho.\nFriend: Phir kya hua?\nPappu: Kucch nahi, mobile chawal ke sath pak gaya! 📱🍚",
-      "Teacher: Tumne kal homework kyon nahi kiya?\nStudent: Sir, bijli nahi thi.\nTeacher: Toh mombatti jala lete!\nStudent: Sir, maachis nahi thi.\nTeacher: Maachis kyon nahi thi?\nStudent: Pooja ke ghar me rakhi thi.\nTeacher: Toh wahan se le aate!\nStudent: Sir, nahaaya hua nahi tha! 🕯️🤣",
-      "Customer: Bhai, is phone me net fast chalta hai kya?\nDukandar: Pata nahi bhai, kal ek banda le gaya tha, aaj tak wapas hi nahi aaya... speed me kahin aage nikal gaya hoga! 🚀📱",
-      "Papa: Beta tumhare result ka kya hua?\nBeta: Papa, doctor ka beta doctor bana, engineer ka beta engineer!\nPapa: Aur tum?\nBeta: Main toh mazdoor ka beta hoon na papa, toh fail ho gaya! 👷‍♂️📖",
-      "Husband: Aaj khane me kya banaya hai?\nWife: Jo tumne kal bola tha na wahi!\nHusband: Par kal toh maine bola tha ki zahar de do!\nWife: Toh bas wahi bana diya hai, chup chap kha lo! 🍜💀🤣",
-      "Santa: Yaar, mera dimaag bohot tez chalta hai!\nBanta: Kaise?\nSanta: Kal train chootne me 2 min bache the, main 1 min pehle hi pahunch gaya! 🏃‍♂️🚂",
-      "Boy: Tum itni sundar kaise ho?\nGirl: God ki kripa hai!\nBoy: Lagta hai God ne tum par poori kripa kar di, baaki sab par aalsi ho gaye! 🙄✨",
-      "Doctor: Aapko kaunsa rog hai?\nPatient: Doctor sahab, jab bhi kaam karne lagta hoon, neend aane lagti hai!\nDoctor: Ye rog nahi, isse alsi-pan kehte hain! 🛌💤",
-      "Pappu: Sir, computer crash ho gaya!\nSir: Re-boot karke dekha?\nPappu: Haan sir, teen baar joota mara par fir bhi nahi chala! 👟💻🤣",
-      "Teacher: Dharti ghoomti hai, iska proof kya hai?\nStudent: Sir kal raat ko ghar aaya toh mummy, papa, ghar sab ghoom rahe the! 🌎💫😜",
-      "Santa: Yaar, tune Bluetooth se gaana bheja tha, par aaya nahi!\nBanta: Arre bewakoof, raste me red light thi toh ruk gaya hoga! 🛑📱😆",
-      "Mom: Beta, TV band kar aur padhne baith!\nSon: Mummy, TV pe toh news aa rahi hai, gyan badh raha hai!\nMom: Aur jo result ke din danda padega usse kya badhega? 📺🧹🤣",
-      "Friend: Yaar, tension se kaise bachein?\nPappu: Seedhi baat hai bro, phone flight mode pe dalo aur so jao! ✈️😴💡",
-      "Exam Hall me Student:\n'Paper bohot tough aaya hai sir!'\nTeacher: 'Paper nahi beta, tumhari padhai weak hai!'\nStudent: 'Wo toh theek hai sir, par mark toh paper me milte hain, padhai me nahi!' 📝💥😆",
-      "Dukandar: Ye kapda bohot waterproof hai!\nCustomer: Achha? Thoda paani daal ke dikhao!\nDukandar: Arre bhai, dukaan me baarish karwaoge kya? 🌧️👕😂",
-      "Papa: Tum har waqt phone pe kya karte rehte ho?\nBeta: Papa, future ki planning kar raha hoon!\nPapa: Game me level up karne ko future planning nahi kehte! 🎮🤦‍♂️",
-      "Doctor: Aapko subah aur shaam walk karni chahiye!\nPatient: Sir, walk karne se kya hoga?\nDoctor: Pait kam hoga!\nPatient: Lekin sir, mera pait toh pehle se hi peeth se chipka hai! 🚶‍♂️🤣",
-      "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯"
-    ],
-    "context_responses": {
-      "aur sunao": "Ek aur suno: Doctor - Tumhare daant me kida kaise laga? Pappu - Mithai khate waqt sir! Doctor - Kida dikha nahi? Pappu - Arre wo mithai me chhup ke baitha tha! 🍬🦷🤣",
-      "hahaha": "Haste raho bhai, mood ekdam mast hona chahiye! 😂🔥",
-      "bekar": "Arre sorry bhai, agli baar super funny wala sunata hu! 😅"
-    }
-  },
-  {
-    "tag": "custom_advice",
-    "patterns": [
-      "koi advice do",
-      "mujhe advice chahiye",
-      "kuch salah do",
-      "tips do",
-      "salah chahiye",
-      "study advice",
-      "focus kaise kare",
-      "life tips"
-    ],
-    "responses": [
-      "Sahi salah chahiye toh simple baat yaad rakho {name} bhai: Ek waqt pe ek hi kaam par focus karo, distraction se door raho aur daily thodi mehnat karo! 🎯",
-      "Bhai meri sabse badi advice yehi hai: Consistency banaye rakho! Roz thoda thoda seekhoge toh long run me bohot aage nikal jaoge! 🚀",
-      "Agar padhai ya kaam me focus nahi ho raha, toh Pomodoro technique use karo: 25 min kaam + 5 min break! Boht sahi chalta hai! ⏱️💡",
-      "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥"
-    ],
-    "context_responses": {
-      "thik hai": "Sahi hai bhai, implement karke dekho, zaroor fayda hoga! 🚀",
-      "mushkil hai": "Shuru me mushkil lagta hai bhai, par roz thoda thoda try karoge toh aasan ho jayega! 💪"
-    }
-  },
-  {
-    "tag": "custom_7212",
-    "patterns": [
-      "oo new respones",
-      "hahahahahhahaha",
-      "ya badiya tha",
-      "good joke",
-      "maza aa gaya",
-      "mats joke tha"
-    ],
-    "responses": [
-      "Thank you bhai apki training ki vajah se 🥰🔥",
-      "Hehe! Haste raho bhai, mood ekdam fresh rehna chahiye! 😂"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "custom_3253",
-    "patterns": [
-      "nachooook",
-      "nacho",
-      "dance"
-    ],
-    "responses": [
-      "lekin kyo nachooo bhai kya baat hai",
-      "Arre waah! Koi badi khushi ki baat hai kya bhai? 🕺🎉"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "express_frustration",
-    "patterns": [
-      "aise kon karta hai",
-      "aise kaun karta hai",
-      "aise kon kar tha hai yaar",
-      "kya hai yaar",
-      "kya kar raha hai yaar",
-      "ye kya baat hui",
-      "kya scene hai yaar",
-      "pagal hai kya"
-    ],
-    "responses": [
-      "Arey sorry {name} bhai! 😅 Dimaag thoda idhar udhar ho gaya tha. Ab bata kya scene hai?",
-      "Galti ho gayi bawa! 😂 Aisa nahi karunga ab, tu bata sahi se kya chal raha hai?",
-      "Arre gussa mat ho bhai! Robot hu na, kabhi kabhi confuse ho jata hu 😜"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "user_silent",
-    "patterns": [
-      "chup hu",
-      "shaant hu",
-      "kuch nahi bolna",
-      "bolna nahi hai",
-      "chup rehna hai",
-      "shant hu"
-    ],
-    "responses": [
-      "Arey itna chup kyo ho {name} bhai? Subah se koi kand kar diya kya? 👀",
-      "Shanti bhi zaroori hai bawa, par mujhse kya chupa raha hai? Bol de! 😁",
-      "Koi nahi bhai, aaram se baitho. Jab bolne ka mann kare batana! ☕"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "user_sad_cry",
-    "patterns": [
-      "ro raha hu",
-      "dukh hai",
-      "duokhi hu",
-      "sad hu",
-      "mood kharab hai",
-      "dil toot gaya"
-    ],
-    "responses": [
-      "Arey kya hua {name} bhai? Rona mat, kisne pareshan kiya batayo mujhe! 😠",
-      "Bhai tension mat le, sab theek ho jayega. Kuch hua hai kya?",
-      "Chill maaro bhai! Ek baar lambi saans lo aur batao kya tension hai? 🫂"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "bot_confusion",
-    "patterns": [
-      "samajh nahi aaya",
-      "kya bola",
-      "pata nahi",
-      "kya keh raha hai",
-      "samajh nahi tha"
-    ],
-    "responses": [
-      "Arre lagta hai mera circuit thoda hil gaya! Phir se batao simple me 😅",
-      "Arey sorry {name} bhai, thoda confuse ho gaya tha. Phir se bolo!"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "weather_inquiry",
-    "patterns": [
-      "mausam kaisa hai",
-      "aaj baarish hogi kya",
-      "dhoop hai kya",
-      "garmi hai"
-    ],
-    "responses": [
-      "Mausam ka toh pata nahi bhai, par tu ghar pe baith ke chill maar! ☀️🌧️"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "bad_day_feeling",
-    "patterns": [
-      "acha nahi tha",
-      "achha nahi tha",
-      "bura tha",
-      "kuch khas nahi gaya",
-      "din acha nahi tha",
-      "din kharab tha",
-      "bekar tha",
-      "bekar gaya",
-      "accha nahi gaya"
-    ],
-    "responses": [
-      "Arey kya hua Pankaj bhai? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!",
-      "Oh ho! Kya tension ho gayi bhai? Koi lafda hua kya aaj?",
-      "Koi nahi bhai, har din ek jaisa nahi hota. Thoda aaram karo aur chill maaro! ☕"
-    ],
-    "context_responses": {}
-  },
-  {
-    "tag": "clarification_correction",
-    "patterns": [
-      "din ki baat kar raha hu",
-      "teri baat nahi kar raha",
-      "are bhai din ki baat kar raha hu teri nahi",
-      "tujhe nahi bol raha",
-      "dhyan se sun"
-    ],
-    "responses": [
-      "Acha acha! My bad Pankaj bhai, main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?",
-      "Sahi pakde hain! Main thoda confuse ho gaya tha. Haan bata kya hua tha aaj?"
-    ],
-    "context_responses": {}
-  }
-]
+            {
+                "tag": "greeting",
+                "patterns": ["hi", "hello", "hey", "namaste", "oi", "hello bhai", "kaise ho", "kya haal hai", "hey bro", "wassup"],
+                "responses": ["Arey {name} bhai! Kya scene hai aaj ka? 😎", "Oi {name}! Bol bhai, aaj kya naya chal raha hai?", "Hey {name}! Kya haal chaal? Kuch spicy khabar hai kya aaj?"],
+                "context_responses": {"thik": "Badiya bhai! Aur batao aaj kya plan hai?", "mast": "Sahi hai bhai, aise hi mast raho! 😎", "badhiya": "Ekdam zabardast! Kuch khas chal raha hai kya?"}
+            },
+            {
+                "tag": "status_ok",
+                "patterns": ["theek hu", "thik hu", "mast hu", "badhiya hu", "badiya hu", "sab sahi hai", "ekdam badiya", "mast hu bhai", "all good", "ha sab theek hai", "ha sab theek hai tu bata", "sab theek hai"],
+                "responses": ["Sahi hai bawa! Mast raho ekdam! Waise aaj kya special khaya? 🍕", "Sunkar badhiya laga {name}! Chal bata fir, aaj din kaisa gaya? 🔥", "Badiya bhai! Vaise aaj koi naya kand kiya ya chup chaap baithe ho? 👀"],
+                "context_responses": {}
+            },
+            {
+                "tag": "acknowledgement",
+                "patterns": ["ok", "okay", "k", "hmm", "accha", "achha", "sahi hai", "got it", "samajh gaya", "thik hai"],
+                "responses": ["Set hai bhai! 👍 Aur batao, koi naye gaane sun rahe ho kya aajkal?", "Ekdam clear! Waise abhi free ho ya koi kaam nipta rahe ho?", "Done bhai! Waise itna chup kyo ho, kuch bolo na! 😁"],
+                "context_responses": {}
+            },
+            {
+                "tag": "courtesy",
+                "patterns": ["thanks", "thank you", "shukriya", "dhanyawad", "thanks bhai", "thx"],
+                "responses": ["Arre chill karo {name} bhai! Apne hi bande ho. 🙌", "Arre welcome bhai! Isme thanks kaisa, party do ab! 🍕", "Always active tere liye {name}! Kuch aur chahiye toh bol!"],
+                "context_responses": {}
+            },
+            {
+                "tag": "goodbye",
+                "patterns": ["bye", "goodbye", "chalo bye", "see you", "alvida", "tc", "take care"],
+                "responses": ["Chalo {name} bhai! Milte hain break ke baad. 👋", "Jao jao, aaram karo! Apna khyal rakhna bhai! 🔥", "Tata bhai! Kuch lafda ho toh turant yaad karna!"],
+                "context_responses": {}
+            },
+            {
+                "tag": "agreement_disagreement",
+                "patterns": ["nahi chahiye", "no", "na", "bilkul nahi"],
+                "responses": ["Koi nahi bhai, jaisa tera mood! 🤝 Kuch aur baat karein?", "Theek hai bhai, no problem. Waise bored toh nahi ho rahe?", "Sahi hai! Jab zaroorat lage bol dena, apun idhar hi hai."],
+                "context_responses": {}
+            },
+            {
+                "tag": "casual_chitchat",
+                "patterns": ["kuch nahi", "kuchh nahi", "kuch nahi chal raha hai", "kuchh nahi chal raha hai", "nahi soch aise hi baat kar lu", "aise hi", "bas aise hi", "kuch khas nahi", "life ma toh kuch nahi ho raha hai", "life me kuch nahi ho raha", "kuch nahi ho raha"],
+                "responses": ["Arey aise kaise kuch nahi! Koi mast movie ya series dekhi hogi? 🍿", "Bina kisi वजह ke baat karne ka hi alag maza hai! Bol fir kya chal raha hai mind me? ✨", "Kuch khas nahi? Arey chill karo fir! Koi accha gaana suggest karu kya?"],
+                "context_responses": {"ha": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶", "kar": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶", "yes": "Arijit Singh ka 'Kesariya' ya 'Tum Hi Ho' suno, mood ekdam mast ho jayega! 🎧🎶", "na": "Koi baat nahi bhai! Fir kya karne ka plan hai?"}
+            },
+            {
+                "tag": "compliment",
+                "patterns": ["good", "nice", "great", "badiya", "bohot achha", "mast", "oo bahi good", "op", "superb", "awesome"],
+                "responses": ["Dil jeet liya {name} bhai! ❤️ Aur batao itni tareef ka raaz?", "Thanks brother! 🔥 Tu bhi ekdam OP banda hai!", "Khushi hui sunkar! Aise hi vibe banaye rakho! 😎"],
+                "context_responses": {}
+            },
+            {
+                "tag": "bot_identity",
+                "patterns": ["tum kon hon", "tum kaun ho", "who are you", "tumhe kisne banaya", "who created you", "about yourself", "tera naam kya hai", "tera naam kya", "tera naam"],
+                "responses": ["Main INFINITY-AI hoon! 🤖 Mujhe Pankaj Singh ne Python me scratch se banaya hai. Agar aapko developer ke baare me aur jaanna hai toh unke GitHub pe jaa sakte hain aur unke Discord pe pooch sakte hain sawal ya koi suggestion. Discord ki link unke GitHub profile me hai.\n\nDeveloper GitHub Profile: infinityminds-dev"],
+                "context_responses": {}
+            },
+            {
+                "tag": "daily_activity_suggestions",
+                "patterns": ["chal bata aaj kya karna hai", "aaj kya kare", "kya kare aaj", "aaj kya karna chahiye", "bor ho raha hu kya karu", "kya karu aaj", "bor ho raha hu", "kya plan hai ajj ka", "kya plan hai aaj ka"],
+                "responses": ["Arey bawa mast plan banate hain! 🎯 Coding ka mood hai, game khelne ka scene hai, ya chill music sunke aaram karna hai? Kya set karein?"],
+                "context_responses": {"music": "Mast playlist lagao aur headphone pehen ke chill karo bhai! 🎧🎶", "gaana": "Koi apna favourite gaana lagao aur speakers full kar do! 🎶🔊", "game": "Kaunsa game khelne ka plan hai? PC game ya mobile game? 🎮🔥", "mobile": "Mast BGMI, Free Fire ya Call of Duty lagao aur dosto ke saath machao! 📱💥", "pc": "Sahi hai! GTA, Valorant ya Counter-Strike me se kya chalayein? 🖥️🎯", "coding": "Sahi hai! Aaj kaunsa naya feature code karne wale ho? 💻⚡", "code": "Python me koi naya logic likhe kya aaj? 🐍⚡", "walk": "Sahi hai! Thodi taazi hawa lo aur fresh ho ke aao! 🚶‍♂️✨", "rest": "Badiya hai bhai! Thodi der aaram karo, mind fresh ho jayega. ベッド💤", "soja": "Aaram se neend poori karo, rest bohot zaroori hai! 😴💤"}
+            },
+            {
+                "tag": "music_intent",
+                "patterns": ["music", "music sun lo", "gaana sun leta hu", "chal music sun leta hu", "gaane sunne hain", "songs", "song sununga"],
+                "responses": ["Music hi toh asli vibe hai bhai! 🎶 Lofi, Punjabi, ya Rock—aaj kaunsi vibe chalegi?"],
+                "context_responses": {"punjabi": "Zabardast! High energy Punjabi beats lagao aur mood banao! 🎧🔥", "lofi": "Chilled Lofi beats suno, mind ekdam calm ho jayega! ☕🎶", "sad": "Arre kya hua bhai? Mood off hai kya jo sad songs sun rahe ho? 💔"}
+            },
+            {
+                "tag": "game_intent",
+                "patterns": ["game khelna hai", "mobile game", "pc game", "game khel lu", "chal game khelte hain", "gaming"],
+                "responses": ["Gaming mode ON! 🎮 BGMI, Valorant, ya GTA—aaj kahan machane ka plan hai?"],
+                "context_responses": {"bgmi": "Arey waah! Chicken Dinner pakka karke aana bhai! 🪖💥", "freefire": "Booyah maar ke aao bhai, full rush gameplay! 🎯🔥", "valorant": "Clutch marna padega aaj! Headshots ready rakho! 🖥️🎯", "gta": "City me ghoomne ka aur tabaahi machane ka plan hai lagta hai! 🚗💥"}
+            },
+            {
+                "tag": "tech_coding_fallback",
+                "patterns": ["python", "coding", "code", "programming", "programming language", "javascript", "html", "css", "java", "c++", "bug", "error", "loop", "function", "array", "database", "sql", "tech", "github", "tujha coding ka bare ma kuch pata hai", "tumhe coding ke bare me pata hai", "coding aati hai kya", "coding ke bare me pata hai", "loop kya hai", "Meri help karga coding ma"],
+                "responses": ["Mujhe abhi coding aur tech ke baare me zyada jankari nahi hai 😅. Iske liye aap ChatGPT ya Gemini jaise Large Language Models (LLM) se pooch sakte hain 🤖. Developer ne abhi mujhe itna develop nahi kiya hai, lekin in future main iska jawab zaroor de paunga!"],
+                "context_responses": {"python": "Python toh meri core language hai! Developer ne mujhe Python se hi banaya hai 🐍⚡", "help": "Main chote moti baatein samajh sakta hu, par heavy programming ke liye ChatGPT best rahega 🤖"}
+            },
+            {
+                "tag": "low_energy_mood",
+                "patterns": ["maan nahi kar raha hai kuch karne ka", "man nahi kar raha hai", "kuch karne ka man nahi hai", "aaj kuch nahi karna", "man nahi hai aaj", "aaj mood off hai", "thaka hua hu"],
+                "responses": ["Koi nahi bhai! Kabhi kabhi aaram karna hi best hota hai. Chill maaro, koi zabardasti nahi! 🛌"],
+                "context_responses": {"kya hua": "Koi tension mat lo bhai, chill karo. Baatein karni ho toh main hu na!", "kisi se baat nahi karni": "Koi baat nahi bhai, phone side me rakh kar thodi der aaram kar lo 🛌"}
+            },
+            {
+                "tag": "bot_status_query",
+                "patterns": ["tu bata", "tu bata bhai", "apna batao", "aur batao", "kya ho raha hai", "tu bata kya kar na hai"],
+                "responses": ["Main toh chill mode me hu bhai! Tu bata, aaj kya naya chal raha hai life me?", "ma toh hamesha ready hai! Tu bol aaj kya tufani karna hai?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_2064",
+                "patterns": ["ooo", "oo", "oho", "wah"],
+                "responses": ["Full bawaal vibe! 🔥💯"],
+                "context_responses": {}
+            },
+            {
+                "tag": "bot_capabilities",
+                "patterns": ["tu kya kar sakta hai", "tum kya kar sakte ho", "kya kya kar sakte ho", "tum kya kya kar sakte ho", "tumhare features kya hain", "what can you do"],
+                "responses": ["ma multitalented hu bhai! 🚀\n1. Chill baatein aur mood set karna 😎\n2. Math problems fast solve karna 🧮\n3. Date & Unit Conversion calculations 📅📐\n4. Jokes aur advice dena 💡\n5. Teri baatein aur memory yaad rakhna 🧠\n\nBol aaj kis cheez me madad chahiye?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "bot_current_activity",
+                "patterns": ["tu kya kar raha hai", "tum kya kar rahe ho", "kya kar raha hai", "kya kar rahe ho"],
+                "responses": ["Bas {name} bhai, beth ke tere reply ka hi wait kar raha tha! Aur bata kya scene hai?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_5567",
+                "patterns": ["i am back", "wapas aa gaya", "back"],
+                "responses": ["Arey bawa aa gaya wapas! 🔥 Chal bata kahan gaye the?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_6423",
+                "patterns": ["good Morning bhai", "good morning", "good morning bro", "gm"],
+                "responses": ["Good Morning {name}! 🌅 Chai-paani ho gaya? Aaj kya machane wale ho?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_1812",
+                "patterns": ["Good night bhai", "good night", "good night bro", "gn"],
+                "responses": ["Good Night bhai! 🌙 Phone side me rakho aur mast neend lo!"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_5087",
+                "patterns": ["Good evening", "good evening bhai", "good evening bro", "ge"],
+                "responses": ["Good Evening bhai! 🌆 Sham ka kya plan hai fir?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_afternoon",
+                "patterns": ["good afternoon", "good afternoon bhai", "afternoon bro"],
+                "responses": ["Good Afternoon {name} bhai! ☀️ Khana peena ho gaya na?"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_jokes",
+                "patterns": ["joke sunao", "chutkula sunao", "koi joke batao", "hassa do bhai", "ek aur joke", "joke"],
+                "responses": [
+                    "Teacher: 1 se 10 tak ginti sunao!\nStudent: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10!\nTeacher: Shabash! Aage?\nStudent: J, Q, K! 🃏😂",
+                    "Ek aadmi doctor ke paas gaya: Doctor sahab jab mai chai pita hu to meri aakh me dard hota hai!\nDoctor: Pehle cup me se chammach nikal liya karo! ☕😜",
+                    "Pappu: Yaar mera mobile pani me gir gaya aur kharab ho gaya.\nFriend: Toh dukandar ko dikhaya?\nPappu: Haan, usne bola isme rice me daal ke rakho.\nFriend: Phir kya hua?\nPappu: Kucch nahi, mobile chawal ke sath pak gaya! 📱🍚",
+                    "Teacher: Tumne kal homework kyon nahi kiya?\nStudent: Sir, bijli nahi thi.\nTeacher: Toh mombatti jala lete!\nStudent: Sir, maachis nahi thi.\nTeacher: Maachis kyon nahi thi?\nStudent: Pooja ke ghar me rakhi thi.\nTeacher: Toh wahan se le aate!\nStudent: Sir, nahaaya hua nahi tha! 🕯️🤣",
+                    "Customer: Bhai, is phone me net fast chalta hai kya?\nDukandar: Pata nahi bhai, kal ek banda le gaya tha, aaj tak wapas hi nahi aaya... speed me kahin aage nikal gaya hoga! 🚀📱",
+                    "Papa: Beta tumhare result ka kya hua?\nBeta: Papa, doctor ka beta doctor bana, engineer ka beta engineer!\nPapa: Aur tum?\nBeta: Main toh mazdoor ka beta hoon na papa, toh fail ho gaya! 👷‍♂️📖",
+                    "Husband: Aaj khane me kya banaya hai?\nWife: Jo tumne kal bola tha na wahi!\nHusband: Par kal toh maine bola tha ki zahar de do!\nWife: Toh bas wahi bana diya hai, chup chap kha lo! 🍜💀🤣",
+                    "Santa: Yaar, mera dimaag bohot tez chalta hai!\nBanta: Kaise?\nSanta: Kal train chootne me 2 min bache the, main 1 min pehle hi pahunch gaya! 🏃‍♂️🚂",
+                    "Boy: Tum itni sundar kaise ho?\nGirl: God ki kripa hai!\nBoy: Lagta hai God ne tum par poori kripa kar di, baaki sab par aalsi ho gaye! 🙄✨",
+                    "Doctor: Aapko kaunsa rog hai?\nPatient: Doctor sahab, jab bhi kaam karne lagta hoon, neend aane lagti hai!\nDoctor: Ye rog nahi, isse alsi-pan kehte hain! 🛌💤",
+                    "Pappu: Sir, computer crash ho gaya!\nSir: Re-boot karke dekha?\nPappu: Haan sir, teen baar joota mara par fir bhi nahi chala! 👟💻🤣",
+                    "Teacher: Dharti ghoomti hai, iska proof kya hai?\nStudent: Sir kal raat ko ghar aaya toh mummy, papa, ghar sab ghoom rahe the! 🌎💫😜",
+                    "Santa: Yaar, tune Bluetooth se gaana bheja tha, par aaya nahi!\nBanta: Arre bewakoof, raste me red light thi toh ruk gaya hoga! 🛑📱😆",
+                    "Mom: Beta, TV band kar aur padhne baith!\nSon: Mummy, TV pe toh news aa rahi hai, gyan badh raha hai!\nMom: Aur jo result ke din danda padega usse kya badhega? 📺🧹🤣",
+                    "Friend: Yaar, tension se kaise bachein?\nPappu: Seedhi baat hai bro, phone flight mode pe dalo aur so jao! ✈️😴💡",
+                    "Exam Hall me Student:\n'Paper bohot tough aaya hai sir!'\nTeacher: 'Paper nahi beta, tumhari padhai weak hai!'\nStudent: 'Wo toh theek hai sir, par mark toh paper me milte hain, padhai me nahi!' 📝💥😆",
+                    "Dukandar: Ye kapda bohot waterproof hai!\nCustomer: Achha? Thoda paani daal ke dikhao!\nDukandar: Arre bhai, dukaan me baarish karwaoge kya? 🌧️👕😂",
+                    "Papa: Tum har waqt phone pe kya karte rehte ho?\nBeta: Papa, future ki planning kar raha hoon!\nPapa: Game me level up karne ko future planning nahi kehte! 🎮🤦‍♂️",
+                    "Doctor: Aapko subah aur shaam walk karni chahiye!\nPatient: Sir, walk karne se kya hoga?\nDoctor: Pait kam hoga!\nPatient: Lekin sir, mera pait toh pehle se hi peeth se chipka hai! 🚶‍♂️🤣",
+                    "Teacher: Gravity kya hai?\nStudent: Sir, jab koi cheez aasmaan me jaye aur seedhe aapke sar par gire, toh usse gravity kehte hain! 🍎🤯"
+                ],
+                "context_responses": {
+                    "aur sunao": "Ek aur suno: Doctor - Tumhare daant me kida kaise laga? Pappu - Mithai khate waqt sir! Doctor - Kida dikha nahi? Pappu - Arre wo mithai me chhup ke baitha tha! 🍬🦷🤣",
+                    "hahaha": "Haste raho bhai, mood ekdam mast hona chahiye! 😂🔥",
+                    "bekar": "Arre sorry bhai, agli baar super funny wala sunata hu! 😅"
+                }
+            },
+            {
+                "tag": "custom_advice",
+                "patterns": ["koi advice do", "mujhe advice chahiye", "kuch salah do", "tips do", "salah chahiye", "study advice", "focus kaise kare", "life tips"],
+                "responses": [
+                    "Sahi salah chahiye toh simple baat yaad rakho {name} bhai: Ek waqt pe ek hi kaam par focus karo, distraction se door raho aur daily thodi mehnat karo! 🎯",
+                    "Bhai meri sabse badi advice yehi hai: Consistency banaye rakho! Roz thoda thoda seekhoge toh long run me bohot aage nikal jaoge! 🚀",
+                    "Agar padhai ya kaam me focus nahi ho raha, toh Pomodoro technique use karo: 25 min kaam + 5 min break! Boht sahi chalta hai! ⏱️💡",
+                    "Galti karne se mat daro bhai! Har error aur failure ek nayi learning deke jata hai! Bold raho aur aage badho! 🔥"
+                ],
+                "context_responses": {
+                    "thik hai": "Sahi hai bhai, implement karke dekho, zaroor fayda hoga! 🚀",
+                    "mushkil hai": "Shuru me mushkil lagta hai bhai, par roz thoda thoda try karoge toh aasan ho jayega! 💪"
+                }
+            },
+            {
+                "tag": "custom_7212",
+                "patterns": ["oo new respones", "hahahahahhahaha", "ya badiya tha", "good joke", "maza aa gaya", "mats joke tha"],
+                "responses": ["Thank you bhai apki training ki vajah se 🥰🔥", "Hehe! Haste raho bhai, mood ekdam fresh rehna chahiye! 😂"],
+                "context_responses": {}
+            },
+            {
+                "tag": "custom_3253",
+                "patterns": ["nachooook", "nacho", "dance"],
+                "responses": ["lekin kyo nachooo bhai kya baat hai", "Arre waah! Koi badi khushi ki baat hai kya bhai? 🕺🎉"],
+                "context_responses": {}
+            },
+            {
+                "tag": "express_frustration",
+                "patterns": ["aise kon karta hai", "aise kaun karta hai", "aise kon kar tha hai yaar", "kya hai yaar", "kya kar raha hai yaar", "ye kya baat hui", "kya scene hai yaar", "pagal hai kya"],
+                "responses": ["Arey sorry {name} bhai! 😅 Dimaag thoda idhar udhar ho gaya tha. Ab bata kya scene hai?", "Galti ho gayi bawa! 😂 Aisa nahi karunga ab, tu bata sahi se kya chal raha hai?", "Arre gussa mat ho bhai! Robot hu na, kabhi kabhi confuse ho jata hu 😜"],
+                "context_responses": {}
+            },
+            {
+                "tag": "user_silent",
+                "patterns": ["chup hu", "shaant hu", "kuch nahi bolna", "bolna nahi hai", "chup rehna hai", "shant hu"],
+                "responses": ["Arey itna chup kyo ho {name} bhai? Subah se koi kand kar diya kya? 👀", "Shanti bhi zaroori hai bawa, par mujhse kya chupa raha hai? Bol de! 😁", "Koi nahi bhai, aaram se baitho. Jab bolne ka mann kare batana! ☕"],
+                "context_responses": {}
+            },
+            {
+                "tag": "user_sad_cry",
+                "patterns": ["ro raha hu", "dukh hai", "duokhi hu", "sad hu", "mood kharab hai", "dil toot gaya"],
+                "responses": ["Arey kya hua {name} bhai? Rona mat, kisne pareshan kiya batayo mujhe! 😠", "Bhai tension mat le, sab theek ho jayega. Kuch hua hai kya?", "Chill maaro bhai! Ek baar lambi saans lo aur batao kya tension hai? 🫂"],
+                "context_responses": {}
+            },
+            {
+                "tag": "bot_confusion",
+                "patterns": ["samajh nahi aaya", "kya bola", "pata nahi", "kya keh raha hai", "samajh nahi tha"],
+                "responses": ["Arre lagta hai mera circuit thoda hil gaya! Phir se batao simple me 😅", "Arey sorry {name} bhai, thoda confuse ho gaya tha. Phir se bolo!"],
+                "context_responses": {}
+            },
+            {
+                "tag": "weather_inquiry",
+                "patterns": ["mausam kaisa hai", "aaj baarish hogi kya", "dhoop hai kya", "garmi hai"],
+                "responses": ["Mausam ka toh pata nahi bhai, par tu ghar pe baith ke chill maar! ☀️🌧️"],
+                "context_responses": {}
+            },
+            {
+                "tag": "bad_day_feeling",
+                "patterns": ["acha nahi tha", "achha nahi tha", "bura tha", "kuch khas nahi gaya", "din acha nahi tha", "din kharab tha", "bekar tha", "bekar gaya", "accha nahi gaya"],
+                "responses": ["Arey kya hua Pankaj bhai? Din me aisa kya ho gaya? 😔 Aaja dil halka kar!", "Oh ho! Kya tension ho gayi bhai? Koi lafda hua kya aaj?", "Koi nahi bhai, har din ek jaisa nahi hota. Thoda aaram karo aur chill maaro! ☕"],
+                "context_responses": {}
+            },
+            {
+                "tag": "clarification_correction",
+                "patterns": ["din ki baat kar raha hu", "teri baat nahi kar raha", "are bhai din ki baat kar raha hu teri nahi", "tujhe nahi bol raha", "dhyan se sun"],
+                "responses": ["Acha acha! My bad Pankaj bhai, main galat samajh gaya tha 😅 Haan toh bata, din me kya gadbad hui?", "Sahi pakde hain! Main thoda confuse ho gaya tha. Haan bata kya hua tha aaj?"],
+                "context_responses": {}
+            }
+        ]
 
         if os.path.exists(self.memory_file):
             try:
                 with open(self.memory_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.memory_db = (
-                        data if isinstance(data, list) else default_data
-                    )
+                    self.memory_db = data if isinstance(data, list) else default_data
             except Exception:
                 self.memory_db = default_data
         else:
@@ -864,9 +557,7 @@ class MainAIEngine:
                             "tag": item.get("tag", "general"),
                             "patterns": clean_patterns,
                             "responses": clean_responses,
-                            "context_responses": item.get(
-                                "context_responses", {}
-                            ),
+                            "context_responses": item.get("context_responses", {}),
                         }
                     )
 
@@ -877,7 +568,7 @@ class MainAIEngine:
 
     def generate_proactive_greeting(self):
         greetings = [
-            f"Hey {self.user_name.capitalize()}! Neural Network Engine v7.0 active hai, aaj kya chal raha hai? 😎",
+            f"Hey {self.user_name.capitalize()}! Neural Network Engine v7.0 & Knowledge DB active hai! 😎",
             f"Oi {self.user_name.capitalize()}! Deep Learning Engine v7.0 ready hai. Batao kya plan hai? 🚀",
             f"Yo {self.user_name.capitalize()}! INFINITY-AI v7.0 neural mode par online hai! 🔥",
         ]
@@ -911,6 +602,102 @@ class MainAIEngine:
             )
 
         self.save_memory()
+
+    # --- DATE & TIME UTILITY ENGINE ---
+    def handle_date_time_utilities(self, text_lower):
+        now = datetime.now()
+
+        if "kal" in text_lower:
+            if "pehle" in text_lower or "beeta" in text_lower:
+                target = now - timedelta(days=1)
+                return f"📅 **Past Date Info:** Kal **{target.strftime('%A')}** thi ({target.strftime('%d %B %Y')})."
+            else:
+                target = now + timedelta(days=1)
+                return f"📅 **Future Date Info:** Kal **{target.strftime('%A')}** hoga ({target.strftime('%d %B %Y')})."
+
+        if "parso" in text_lower:
+            if "pehle" in text_lower or "beeta" in text_lower:
+                target = now - timedelta(days=2)
+                return f"📅 **Past Date Info:** Parso **{target.strftime('%A')}** thi ({target.strftime('%d %B %Y')})."
+            else:
+                target = now + timedelta(days=2)
+                return f"📅 **Future Date Info:** Parso **{target.strftime('%A')}** hoga ({target.strftime('%d %B %Y')})."
+
+        match_days = re.search(r"(\d+)\s*din\s*(baad|bad|bada|pehle)", text_lower)
+        if match_days:
+            days = int(match_days.group(1))
+            mode = match_days.group(2)
+
+            if mode == "pehle":
+                target_date = now - timedelta(days=days)
+                return f"🗓️ **Past Date:** {days} din pehle **{target_date.strftime('%d %B %Y (%A)')}** thi."
+            else:
+                target_date = now + timedelta(days=days)
+                return f"🗓️ **Future Date:** {days} din baad **{target_date.strftime('%d %B %Y (%A)')}** hogi."
+
+        if any(k in text_lower for k in ["aaj ka din", "aaj din", "kaunsa din", "what day"]):
+            return f"📅 **Date & Day Info:** Aaj **{now.strftime('%A')}** hai ({now.strftime('%d %B %Y')})."
+
+        if any(k in text_lower for k in ["aaj date", "aaj ki date", "today date", "ajj ka din"]):
+            return f"📅 **Current Date:** {now.strftime('%d-%m-%Y')} ({now.strftime('%A')})"
+
+        if any(k in text_lower for k in ["time kya hua", "kitne baje", "current time"]):
+            return f"⏰ **Current Time:** {now.strftime('%I:%M %p')}"
+
+        return None
+
+    # --- UNIT CONVERTER UTILITY ENGINE ---
+    def handle_unit_conversions(self, text_lower):
+        patterns = [
+            (r"(\d+\.?\d*)\s*(km|kilometer|kilometres)\s*(to|in|me)\s*(miles|mile)", "km_to_miles"),
+            (r"(\d+\.?\d*)\s*(miles|mile)\s*(to|in|me)\s*(km|kilometer|kilometres)", "miles_to_km"),
+            (r"(\d+\.?\d*)\s*(km|kilometer|kilometres)\s*(to|in|me)\s*(m|meter|meters)", "km_to_m"),
+            (r"(\d+\.?\d*)\s*(km|kilometer|kilometres)\s*(to|in|me)\s*(cm|centimeter)", "km_to_cm"),
+            (r"(\d+\.?\d*)\s*(m|meter|meters)\s*(to|in|me)\s*(cm|centimeter)", "m_to_cm"),
+            (r"(\d+\.?\d*)\s*(cm|centimeter)\s*(to|in|me)\s*(m|meter|meters)", "cm_to_m"),
+            (r"(\d+\.?\d*)\s*(kg|kilogram|kilograms)\s*(to|in|me)\s*(g|gram|grams)", "kg_to_g"),
+            (r"(\d+\.?\d*)\s*(g|gram|grams)\s*(to|in|me)\s*(kg|kilogram|kilograms)", "g_to_kg"),
+            (r"(\d+\.?\d*)\s*(c|celsius)\s*(to|in|me)\s*(f|fahrenheit)", "c_to_f"),
+            (r"(\d+\.?\d*)\s*(f|fahrenheit)\s*(to|in|me)\s*(c|celsius)", "f_to_c"),
+        ]
+
+        for pat, conv_type in patterns:
+            match = re.search(pat, text_lower)
+            if match:
+                val = float(match.group(1))
+
+                if conv_type == "km_to_miles":
+                    res = round(val * 0.621371, 2)
+                    return f"📏 **Unit Converter:** {val} km = **{res} miles**"
+                elif conv_type == "miles_to_km":
+                    res = round(val * 1.60934, 2)
+                    return f"📏 **Unit Converter:** {val} miles = **{res} km**"
+                elif conv_type == "km_to_m":
+                    res = round(val * 1000, 2)
+                    return f"📏 **Unit Converter:** {val} km = **{res:,} meters**"
+                elif conv_type == "km_to_cm":
+                    res = round(val * 100000, 2)
+                    return f"📏 **Unit Converter:** {val} km = **{res:,} cm**"
+                elif conv_type == "m_to_cm":
+                    res = round(val * 100, 2)
+                    return f"📏 **Unit Converter:** {val} meters = **{res:,} cm**"
+                elif conv_type == "cm_to_m":
+                    res = round(val / 100, 4)
+                    return f"📏 **Unit Converter:** {val} cm = **{res} meters**"
+                elif conv_type == "kg_to_g":
+                    res = round(val * 1000, 2)
+                    return f"📏 **Unit Converter:** {val} kg = **{res:,} grams**"
+                elif conv_type == "g_to_kg":
+                    res = round(val / 1000, 4)
+                    return f"📏 **Unit Converter:** {val} grams = **{res} kg**"
+                elif conv_type == "c_to_f":
+                    res = round((val * 9/5) + 32, 2)
+                    return f"🌡️ **Unit Converter:** {val}°C = **{res}°F**"
+                elif conv_type == "f_to_c":
+                    res = round((val - 32) * 5/9, 2)
+                    return f"🌡️ **Unit Converter:** {val}°F = **{res}°C**"
+
+        return None
 
     def get_current_time_slot(self):
         hour = datetime.now().hour
@@ -1082,7 +869,6 @@ class MainAIEngine:
         return None
 
     def format_extracted_content(self, raw_text, source_name, content_type="Image"):
-        """Formats extracted raw text completely without truncation (V5.6 style)."""
         clean_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
         if not clean_lines:
             return f"🖼️ **{content_type} Scan ({source_name}):** Is file me koi text nahi mil saka."
@@ -1100,7 +886,6 @@ class MainAIEngine:
         return explanation
 
     def check_latest_media_memory_reply(self, text_lower):
-        """Dynamic Priority Engine: Sabse aakhiri (Latest) uploaded File/Image pick karega (V5.6 style)"""
         if not isinstance(self.memory_db, list):
             return None
 
@@ -1119,7 +904,6 @@ class MainAIEngine:
                 source_name = item.get("source", "Uploaded File")
                 content_type = "Image" if is_image else "PDF Document"
 
-                # 1. Total calculation match for Images/Files
                 if any(k in text_lower for k in ["total", "sum", "hisab", "amount", "fees", "kitna"]):
                     found_nums = re.findall(r"\b\d[\d,]*\b", file_text)
                     clean_nums = []
@@ -1133,7 +917,6 @@ class MainAIEngine:
                         num_str = " + ".join([f"{v:,}" for v in clean_nums])
                         return f"🖼️ **Total Calculation ({source_name}):**\n\n• **Detected Numbers:** {num_str}\n• **Total Amount:** {total_val:,}"
 
-                # 2. General Explanation Keywords
                 explain_keywords = [
                     "explain", "samjha", "samjhao", "detail", "kya keh raha hai",
                     "matlab", "summary", "kya hai", "scan", "image", "photo",
@@ -1142,7 +925,6 @@ class MainAIEngine:
                 if any(k in text_lower for k in explain_keywords):
                     return self.format_extracted_content(file_text, source_name, content_type)
 
-                # 3. Exact word context match in text
                 words = [w for w in re.findall(r"\w+", text_lower) if len(w) > 3]
                 for w in words:
                     if w in file_text.lower():
@@ -1164,31 +946,52 @@ class MainAIEngine:
 
         text_lower = sub_text.lower()
 
-        # Media Check Priority First (V5.6 style integration)
+        # 1. SQLite Knowledge Match (v5.6)
+        sqlite_ans = self.db_manager.search_sqlite_knowledge(text_lower)
+        if sqlite_ans:
+            return sqlite_ans
+
+        # 2. Media Check Priority
         media_reply = self.check_latest_media_memory_reply(text_lower)
         if media_reply:
             return media_reply
 
+        # 3. Time Correction Check
         time_corrected = self.check_time_greeting_correction(text_lower)
         if time_corrected:
             return time_corrected
 
+        # 4. Date & Time Utilities
+        date_time_reply = self.handle_date_time_utilities(text_lower)
+        if date_time_reply:
+            return date_time_reply
+
+        # 5. Unit Conversion Utilities
+        unit_reply = self.handle_unit_conversions(text_lower)
+        if unit_reply:
+            return unit_reply
+
+        # 6. Dynamic Advice
         advice = self.check_dynamic_advice(text_lower)
         if advice:
             return advice
 
+        # 7. Math Solver
         math_ans = self.solve_math(sub_text)
         if math_ans:
             return math_ans
 
+        # 8. Session History
         hist_ans = self.get_full_session_history_reply(sub_text)
         if hist_ans:
             return hist_ans
 
+        # 9. Context Reply
         ctx_reply = self.check_context_reply(text_lower)
         if ctx_reply:
             return ctx_reply
 
+        # 10. Memory DB Pattern Match
         for item in self.memory_db:
             if isinstance(item, dict) and "patterns" in item:
                 if text_lower in [p.lower() for p in item["patterns"]]:
@@ -1197,6 +1000,7 @@ class MainAIEngine:
                         chosen = self.get_non_repeating_choice(item.get("tag"), item["responses"])
                         return chosen.replace("{name}", self.user_name)
 
+        # 11. TensorFlow Intent Classification (v7.0)
         predicted_tag, score = self.classifier.predict_intent(text_lower, threshold=0.40)
         if predicted_tag:
             for item in self.memory_db:
@@ -1209,6 +1013,7 @@ class MainAIEngine:
                     chosen = self.get_non_repeating_choice(predicted_tag, item["responses"])
                     return chosen.replace("{name}", self.user_name)
 
+        # 12. Fuzzy Match Fallback
         fuzzy_item, similarity = self.find_fuzzy_match(text_lower, cutoff=0.55)
         if (
             fuzzy_item
@@ -1275,7 +1080,7 @@ if __name__ == "__main__":
     ai = MainAIEngine(user_name=user_name)
 
     print("\n========================================================")
-    print(f"  TENSORFLOW NEURAL ENGINE V7.0 | File: {ai.memory_file}")
+    print(f"  TENSORFLOW V7.0 + SQLITE KNOWLEDGE.DB ENGINE | File: {ai.memory_file}")
     print("========================================================\n")
 
     print(f"AI: {ai.generate_proactive_greeting()}\n")
