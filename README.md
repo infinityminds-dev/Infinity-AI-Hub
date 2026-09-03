@@ -33,7 +33,7 @@ A lightweight Python AI engine built from scratch with an interactive **Flask We
 | **`requirements.txt`**  | **Python Dependencies**  | Lists the external Python packages required by Infinity AI Hub.                                      |
 | **`ai_memory_*.json`**  | **Persistent AI Memory** | JSON databases storing trained patterns, intents, and custom user responses| 
 | **`LICENSE`** | Project License | MIT License information |
-|**`knowledge.db`| Offline Knowledge Base | SQLite database storing pre-built facts, fallback responses, and general knowledge queries.
+|**`knowledge.db`**| Offline Knowledge Base | SQLite database storing pre-built facts, fallback responses, and general knowledge queries.
 
 ---
 
