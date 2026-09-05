@@ -360,6 +360,9 @@ Built from scratch with the goal of creating a system that can continuously **le
 
 ---
 
-## 🧠 Infinity AI Hub
-
-**Learn. Remember. Evolve. ♾️**
+### ⭐ Support the Project
+If you like **Infinity AI Hub** and want to support its development:
+* Give this repository a **Star** ⭐️
+* Share it with other developers 🚀
+* Report bugs or suggest features via **Issues** 💡
+* 
