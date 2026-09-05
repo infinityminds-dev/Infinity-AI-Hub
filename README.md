@@ -1,5 +1,9 @@
 # 🧠 Infinity AI Hub - Self-Learning Conversational AI Engine
 
+[![GitHub Stars](https://img.shields.io/github/stars/infinityminds-dev/Infinity-AI-Hub?style=social)](https://github.com/infinityminds-dev/Infinity-AI-Hub/stargazers)
+
+> ⭐ **If you find this project useful, please give it a Star on GitHub! It helps the project grow.**
+> 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A lightweight Python AI engine built from scratch with an interactive **Flask Web Hub UI**, live self-learning, multi-query processing, dynamic math solving, and automated JSON memory management.
